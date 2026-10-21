@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pearl-coral">
+<head>
+    <meta charset="UTF-8">
+    <script>
+        (function() {
+            let saved = localStorage.getItem("fraudguard_theme") || "pearl-coral";
+            if (saved === "light") saved = "pearl-coral";
+            document.documentElement.setAttribute("data-theme", saved);
+        })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="An intelligent financial fraud detection system powered by machine learning, real-time prediction, and centralized fraud alert management."
+    >
+
+    <meta name="theme-color" content="#0B1110">
+
+    <title>Financial Fraud Detection | Intelligent Risk Protection</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="css/landing.css">
+</head>
+
+<body>
+
+    <!-- Animated background -->
+    <div class="ambient-background" aria-hidden="true">
+        <div class="ambient-glow glow-one"></div>
+        <div class="ambient-glow glow-two"></div>
+        <div class="ambient-grid"></div>
+    </div>
+
+
+    <!-- Navigation -->
+    <header class="site-header" id="home">
+
+        <div class="container navigation">
+
+            <a href="#home" class="brand" aria-label="Financial Fraud Detection Home">
+
+                <div class="brand-icon">
+                    <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                        <path
+                            d="M20 3L33 8V18C33 26 27.5 32 20 36C12.5 32 7 26 7 18V8L20 3Z"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        />
+                        <path
+                            d="M14 19L18 23L27 14"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                </div>
+
+                <div class="brand-copy">
+                    <span>FINANCIAL FRAUD</span>
+                    <small>DETECTION SYSTEM</small>
+                </div>
+
+            </a>
+
+
+            <button
+                class="mobile-menu-button"
+                id="mobileMenuButton"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+                aria-controls="mainNavigation"
+                type="button"
+            >
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+
+            <nav class="main-navigation" id="mainNavigation">
+
+                <a href="#home" class="nav-link active">Home</a>
+
+                <a href="#features" class="nav-link">Features</a>
+
+                <a href="#workflow" class="nav-link">How It Works</a>
+
+                <a href="#technology" class="nav-link">Technology</a>
+
+                <a href="http://127.0.0.1:8000/docs" class="nav-link">
+                    API Docs
+                </a>
+
+                <button
+                    class="theme-toggle-btn"
+                    id="themeToggleBtn"
+                    type="button"
+                    aria-label="Toggle visual theme"
+                    title="Switch Theme (Click to cycle themes)"
+                >
+                    <span class="theme-toggle-icon" id="themeToggleIcon" aria-hidden="true">🪸</span>
+                    <span class="theme-toggle-label" id="themeToggleLabel">Pearl Coral</span>
+                </button>
+
+                <a href="login.html" class="button button-outline nav-login">
+                    Log In
+                </a>
+
+            </nav>
+
+        </div>
+
+    </header>
+
+
+    <main>
+
+        <!-- Hero section -->
+        <section class="hero-section">
+
+            <div class="container hero-layout">
+
+                <div class="hero-content reveal">
+
+                    <div class="eyebrow">
+                        <span class="status-dot"></span>
+                        INTELLIGENT RISK PROTECTION
+                    </div>
+
+                    <h1>
+                        Detect Financial Fraud
+                        <span class="gradient-text">
+                            Before It Becomes a Loss.
+                        </span>
+                    </h1>
+
+                    <p class="hero-description">
+                        Analyze financial transactions using machine learning,
+                        assess suspicious activity, and manage fraud alerts
+                        through one integrated monitoring platform.
+                    </p>
+
+                    <div class="hero-assurance">
+
+                        <span class="assurance-icon">✓</span>
+
+                        <p>
+                            Machine Learning
+                            <span>·</span>
+                            Secure API
+                            <span>·</span>
+                            Risk Monitoring
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Animated security visual -->
+                <div class="hero-visual reveal" aria-label="Decorative financial security illustration">
+
+                    <div class="visual-orbit orbit-one"></div>
+                    <div class="visual-orbit orbit-two"></div>
+                    <div class="visual-orbit orbit-three"></div>
+
+                    <div class="orbit-node node-one"></div>
+                    <div class="orbit-node node-two"></div>
+                    <div class="orbit-node node-three"></div>
+
+
+                    <div class="security-core">
+
+                        <div class="security-core-inner">
+
+                            <svg
+                                class="large-shield"
+                                viewBox="0 0 120 140"
+                                fill="none"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M60 5L108 23V59C108 91 87 117 60 134C33 117 12 91 12 59V23L60 5Z"
+                                    stroke="currentColor"
+                                    stroke-width="3"
+                                />
+
+                                <path
+                                    d="M39 68L53 82L82 52"
+                                    stroke="currentColor"
+                                    stroke-width="5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+
+                            <div class="core-label">
+                                FRAUD DEFENSE
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="floating-card card-transaction">
+
+                        <div class="mini-card-header">
+                            <span class="mini-icon copper-icon">↗</span>
+
+                            <div>
+                                <strong>Transaction Analysis</strong>
+                                <small>ML prediction workflow</small>
+                            </div>
+                        </div>
+
+                        <div class="mini-divider"></div>
+
+                        <div class="mini-card-row">
+                            <span>Transaction input</span>
+                            <span class="mini-status status-ready">
+                                Ready
+                            </span>
+                        </div>
+
+                        <div class="mini-card-row">
+                            <span>Risk assessment</span>
+                            <span class="mini-status status-pending">
+                                Model-based
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="floating-card card-alert">
+
+                        <div class="alert-icon">!</div>
+
+                        <div>
+                            <strong>Fraud Alert Management</strong>
+                            <small>Review suspicious predictions</small>
+                        </div>
+
+                    </div>
+
+
+                    <div class="floating-card card-database">
+
+                        <span class="database-indicator"></span>
+
+                        <div>
+                            <strong>PostgreSQL</strong>
+                            <small>Alert storage layer</small>
+                        </div>
+
+                    </div>
+
+
+                    <div class="visual-caption">
+                        <span class="caption-line"></span>
+                        INTELLIGENT FINANCIAL SECURITY
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Live service status strip -->
+            <div class="container service-strip">
+
+                <div class="service-item">
+                    <span class="service-symbol">ϟ</span>
+
+                    <div>
+                        <small>API SERVICE</small>
+                        <strong id="apiStatus">Checking...</strong>
+                    </div>
+                </div>
+
+
+                <div class="service-item">
+                    <span class="service-symbol">◇</span>
+
+                    <div>
+                        <small>DATABASE</small>
+                        <strong id="databaseStatus">Checking...</strong>
+                    </div>
+                </div>
+
+
+                <div class="service-item">
+                    <span class="service-symbol">⌘</span>
+
+                    <div>
+                        <small>ML MODEL</small>
+                        <strong id="modelStatus">Checking...</strong>
+                    </div>
+                </div>
+
+
+                <div class="service-item threshold-item">
+                    <span class="service-symbol">◎</span>
+
+                    <div>
+                        <small>DECISION THRESHOLD</small>
+                        <strong id="decisionThreshold">--</strong>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Features -->
+        <section class="features-section section-padding" id="features">
+
+            <div class="container">
+
+                <div class="section-heading reveal">
+
+                    <span class="section-kicker">CORE CAPABILITIES</span>
+
+                    <h2>
+                        Financial security,
+                        <span class="gradient-text">made intelligent.</span>
+                    </h2>
+
+                    <p>
+                        A connected platform for transaction prediction,
+                        risk assessment, and suspicious activity investigation.
+                    </p>
+
+                </div>
+
+
+                <div class="features-grid">
+
+                    <article class="feature-card reveal">
+
+                        <div class="feature-icon icon-copper">
+                            ↗
+                        </div>
+
+                        <span class="feature-number">01</span>
+
+                        <h3>Real-Time Prediction</h3>
+
+                        <p>
+                            Submit individual financial transactions and
+                            receive predictions from the trained machine
+                            learning model.
+                        </p>
+
+                        <a href="login.html?next=dashboard.html#predictor"
+                           class="feature-link">
+                            Explore prediction <span>→</span>
+                        </a>
+
+                    </article>
+
+
+                    <article class="feature-card reveal">
+
+                        <div class="feature-icon icon-emerald">
+                            ◎
+                        </div>
+
+                        <span class="feature-number">02</span>
+
+                        <h3>Risk Assessment</h3>
+
+                        <p>
+                            Review fraud probability, risk scores, risk
+                            levels, and model decisions based on the
+                            configured threshold.
+                        </p>
+
+                        <a href="login.html?next=dashboard.html#predictor"
+                           class="feature-link">
+                            Explore assessment <span>→</span>
+                        </a>
+
+                    </article>
+
+
+                    <article class="feature-card reveal">
+
+                        <div class="feature-icon icon-rose">
+                            ◈
+                        </div>
+
+                        <span class="feature-number">03</span>
+
+                        <h3>Fraud Alert Management</h3>
+
+                        <p>
+                            Retrieve suspicious prediction alerts, search
+                            transactions, and manage investigation status
+                            through the backend APIs.
+                        </p>
+
+                        <a href="login.html?next=dashboard.html#alerts"
+                           class="feature-link">
+                            Explore alerts <span>→</span>
+                        </a>
+
+                    </article>
+
+
+                    <article class="feature-card reveal">
+
+                        <div class="feature-icon icon-gold">
+                            ⛁
+                        </div>
+
+                        <span class="feature-number">04</span>
+
+                        <h3>Centralized Data Storage</h3>
+
+                        <p>
+                            Use PostgreSQL to persist fraud alerts and
+                            their investigation statuses for retrieval
+                            and monitoring.
+                        </p>
+
+                        <a href="#technology" class="feature-link">
+                            Explore technology <span>→</span>
+                        </a>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Workflow -->
+        <section class="workflow-section section-padding" id="workflow">
+
+            <div class="container">
+
+                <div class="section-heading reveal">
+
+                    <span class="section-kicker">THE DETECTION PROCESS</span>
+
+                    <h2>
+                        From transaction to
+                        <span class="gradient-text">investigation.</span>
+                    </h2>
+
+                    <p>
+                        Four connected stages explain how your application
+                        processes a transaction and manages suspicious predictions.
+                    </p>
+
+                </div>
+
+
+                <div class="workflow-grid">
+
+                    <article class="workflow-step reveal">
+
+                        <div class="step-top">
+                            <span class="step-number">01</span>
+                            <span class="step-symbol">▤</span>
+                        </div>
+
+                        <div class="step-connector"></div>
+
+                        <h3>Transaction Input</h3>
+
+                        <p>
+                            The user enters the transaction attributes
+                            through the predictor form.
+                        </p>
+
+                    </article>
+
+
+                    <article class="workflow-step reveal">
+
+                        <div class="step-top">
+                            <span class="step-number">02</span>
+                            <span class="step-symbol">⌘</span>
+                        </div>
+
+                        <div class="step-connector"></div>
+
+                        <h3>ML Model Scoring</h3>
+
+                        <p>
+                            FastAPI passes the transaction to the trained
+                            model for prediction.
+                        </p>
+
+                    </article>
+
+
+                    <article class="workflow-step reveal">
+
+                        <div class="step-top">
+                            <span class="step-number">03</span>
+                            <span class="step-symbol">◉</span>
+                        </div>
+
+                        <div class="step-connector"></div>
+
+                        <h3>Risk Classification</h3>
+
+                        <p>
+                            The application evaluates the model probability
+                            against its decision threshold.
+                        </p>
+
+                    </article>
+
+
+                    <article class="workflow-step reveal">
+
+                        <div class="step-top">
+                            <span class="step-number">04</span>
+                            <span class="step-symbol">♧</span>
+                        </div>
+
+                        <h3>Alert Management</h3>
+
+                        <p>
+                            Suspicious predictions are stored in PostgreSQL
+                            and made available for review.
+                        </p>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Technology -->
+        <section class="technology-section section-padding" id="technology">
+
+            <div class="container technology-layout">
+
+                <div class="technology-copy reveal">
+
+                    <span class="section-kicker">BUILT WITH PURPOSE</span>
+
+                    <h2>
+                        A connected
+                        <span class="gradient-text">technology stack.</span>
+                    </h2>
+
+                    <p>
+                        Your fraud detection application combines a trained
+                        machine learning pipeline, REST APIs, secure access,
+                        and relational data storage.
+                    </p>
+
+                    <a href="http://127.0.0.1:8000/docs"
+                       class="text-link"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        Explore API documentation <span>↗</span>
+                    </a>
+
+                </div>
+
+
+                <div class="technology-grid reveal">
+
+                    <div class="technology-card">
+                        <span class="tech-mark tech-python">Py</span>
+
+                        <div>
+                            <strong>Python</strong>
+                            <small>ML pipeline</small>
+                        </div>
+                    </div>
+
+
+                    <div class="technology-card">
+                        <span class="tech-mark tech-fastapi">ϟ</span>
+
+                        <div>
+                            <strong>FastAPI</strong>
+                            <small>REST services</small>
+                        </div>
+                    </div>
+
+
+                    <div class="technology-card">
+                        <span class="tech-mark tech-postgres">PG</span>
+
+                        <div>
+                            <strong>PostgreSQL</strong>
+                            <small>Alert database</small>
+                        </div>
+                    </div>
+
+
+                    <div class="technology-card">
+                        <span class="tech-mark tech-ml">ML</span>
+
+                        <div>
+                            <strong>Scikit-learn</strong>
+                            <small>Model inference</small>
+                        </div>
+                    </div>
+
+
+                    <div class="technology-card">
+                        <span class="tech-mark tech-web">{"}"}</span>
+
+                        <div>
+                            <strong>HTML / CSS / JS</strong>
+                            <small>Frontend interface</small>
+                        </div>
+                    </div>
+
+
+                    <div class="technology-card">
+                        <span class="tech-mark tech-security">◇</span>
+
+                        <div>
+                            <strong>Bearer Auth</strong>
+                            <small>API access control</small>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Final CTA -->
+        <section class="cta-section">
+
+            <div class="container">
+
+                <div class="cta-panel reveal">
+
+                    <div class="cta-decoration" aria-hidden="true"></div>
+
+                    <div class="cta-content">
+
+                        <span class="section-kicker">
+                            INTELLIGENCE MEETS FINANCIAL SECURITY
+                        </span>
+
+                        <h2>
+                            Ready to examine
+                            <span class="gradient-text">transaction risk?</span>
+                        </h2>
+
+                        <p>
+                            Open your fraud monitoring application to run
+                            a prediction and review suspicious alerts.
+                        </p>
+
+                        <div class="hero-actions">
+
+                            <a
+                                href="login.html?next=dashboard.html"
+                                class="button button-primary button-large"
+                            >
+                                Enter the Platform
+                                <span aria-hidden="true">↗</span>
+                            </a>
+
+                            <a
+                                href="http://127.0.0.1:8000/docs"
+                                class="button button-secondary button-large"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                View API Docs
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- Footer -->
+    <footer class="site-footer">
+
+        <div class="container footer-content">
+
+            <a href="#home" class="brand footer-brand">
+
+                <div class="brand-icon">
+                    <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                        <path
+                            d="M20 3L33 8V18C33 26 27.5 32 20 36C12.5 32 7 26 7 18V8L20 3Z"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        />
+                        <path
+                            d="M14 19L18 23L27 14"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                </div>
+
+                <div class="brand-copy">
+                    <span>FINANCIAL FRAUD</span>
+                    <small>DETECTION SYSTEM</small>
+                </div>
+
+            </a>
+
+
+            <p class="footer-note">
+                Intelligent prediction. Informed investigation.
+            </p>
+
+
+            <div class="footer-links">
+                <a href="#features">Features</a>
+                <a href="#workflow">Workflow</a>
+                <a href="http://127.0.0.1:8000/docs"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                    API Docs
+                </a>
+            </div>
+
+        </div>
+
+
+        <div class="container footer-bottom">
+
+            <span>
+                © <span id="currentYear"></span>
+                Financial Fraud Detection System
+            </span>
+
+            <span class="footer-status">
+                <span class="status-dot"></span>
+                LOCAL DEVELOPMENT
+            </span>
+
+        </div>
+
+    </footer>
+
+
+    <script src="js/landing.js" defer></script>
+
+</body>
+</html>

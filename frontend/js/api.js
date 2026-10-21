@@ -1,371 +1,377 @@
-// ============================================================
-// Financial Fraud Detection System
-// API Communication Layer
-// ============================================================
+/* =====================================================
+   FINANCIAL FRAUD DETECTION SYSTEM
+   API Client — Frontend to FastAPI Backend
+===================================================== */
 
-const API_BASE_URL = (typeof window !== "undefined" && window.location.protocol.startsWith("http") && (window.location.port === "8000" || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
-    ? `${window.location.protocol}//${window.location.hostname}:8000`
-    : "http://127.0.0.1:8000";
+(() => {
+    "use strict";
 
+    // -------------------------------------------------
+    // Configuration
+    // -------------------------------------------------
 
-// ============================================================
-// Token Management
-// ============================================================
+    const API_BASE_URL = (
+        window.FRAUD_API_BASE_URL || "http://127.0.0.1:8000"
+    ).replace(/\/+$/, "");
 
-const STATIC_MASTER_TOKEN = "fraud-secret-bearer-token-2026";
+    const TOKEN_KEY = "fraud_access_token";
+    const ROLE_KEY = "fraud_user_role";
 
-function getAccessToken() {
-    return localStorage.getItem("fraud_access_token") || STATIC_MASTER_TOKEN;
-}
+    // -------------------------------------------------
+    // Authentication Storage
+    // -------------------------------------------------
 
-
-function setAccessToken(token) {
-    if (token) {
-        localStorage.setItem("fraud_access_token", token);
-    }
-}
-
-
-function clearAccessToken() {
-    localStorage.removeItem("fraud_access_token");
-}
-
-
-function isAuthenticated() {
-    return Boolean(getAccessToken());
-}
-
-
-// ============================================================
-// Common Request Helper (with Auto-Authentication Self-Healing)
-// ============================================================
-
-async function apiRequest(
-    endpoint,
-    options = {},
-    isRetry = false
-) {
-    let token = getAccessToken();
-
-    const headers = {
-        ...(options.headers || {})
-    };
-
-    if (!headers["Content-Type"] && options.body) {
-        headers["Content-Type"] = "application/json";
+    function getToken() {
+        return localStorage.getItem(TOKEN_KEY);
     }
 
-    if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+    function getUserRole() {
+        return localStorage.getItem(ROLE_KEY);
     }
 
-    let response;
-    try {
-        response = await fetch(
-            `${API_BASE_URL}${endpoint}`,
-            {
-                ...options,
-                headers
-            }
-        );
-    } catch (networkError) {
-        throw new Error(`Backend service unreachable: ${networkError.message}`);
+    function isAuthenticated() {
+        return Boolean(getToken());
     }
 
-    // Auto-heal expired / invalidated session tokens
-    if (response.status === 401 && !isRetry) {
+    function saveSession(authData) {
+        if (!authData || !authData.access_token) {
+            throw new Error("Login response did not contain an access token.");
+        }
+
+        localStorage.setItem(TOKEN_KEY, authData.access_token);
+
+        if (authData.user_role) {
+            localStorage.setItem(ROLE_KEY, authData.user_role);
+        } else {
+            localStorage.removeItem(ROLE_KEY);
+        }
+    }
+
+    function clearSession() {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(ROLE_KEY);
+    }
+
+    // -------------------------------------------------
+    // Response Processing
+    // -------------------------------------------------
+
+    async function parseResponse(response) {
+        const text = await response.text();
+
+        if (!text) {
+            return null;
+        }
+
         try {
-            const formData = new URLSearchParams();
-            formData.append("username", "admin");
-            formData.append("password", "admin123");
+            return JSON.parse(text);
+        } catch {
+            return text;
+        }
+    }
 
-            const loginRes = await fetch(`${API_BASE_URL}/auth/token`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: formData.toString()
-            });
-
-            if (loginRes.ok) {
-                const loginData = await loginRes.json();
-                if (loginData.access_token) {
-                    setAccessToken(loginData.access_token);
-                    return await apiRequest(endpoint, options, true);
-                }
+    function getErrorMessage(data, status) {
+        if (data && typeof data === "object") {
+            if (typeof data.detail === "string") {
+                return data.detail;
             }
-        } catch (authError) {
-            console.warn("Auto-token renewal failed:", authError);
+
+            if (Array.isArray(data.detail)) {
+                return data.detail
+                    .map((item) => item.msg || "Invalid request")
+                    .join("; ");
+            }
+
+            if (typeof data.message === "string") {
+                return data.message;
+            }
         }
 
-        // Fallback to static master token
-        setAccessToken(STATIC_MASTER_TOKEN);
-        return await apiRequest(endpoint, options, true);
+        if (typeof data === "string" && data.trim()) {
+            return data;
+        }
+
+        return `Request failed with status ${status}.`;
     }
 
-    let data = null;
+    // -------------------------------------------------
+    // Main API Request Function
+    // -------------------------------------------------
 
-    const contentType =
-        response.headers.get("content-type") || "";
+    async function request(path, options = {}) {
+        const {
+            method = "GET",
+            body,
+            headers = {},
+            auth = true,
+            formEncoded = false,
+            ...fetchOptions
+        } = options;
 
-    if (contentType.includes("application/json")) {
-        data = await response.json();
-    } else {
-        data = await response.text();
+        const requestHeaders = {
+            Accept: "application/json",
+            ...headers
+        };
+
+        // Attach the bearer token to protected requests.
+        if (auth) {
+            const token = getToken();
+
+            if (token) {
+                requestHeaders.Authorization = `Bearer ${token}`;
+            }
+        }
+
+        let requestBody;
+
+        if (body !== undefined && body !== null) {
+            if (formEncoded) {
+                requestHeaders["Content-Type"] =
+                    "application/x-www-form-urlencoded";
+
+                requestBody = body;
+            } else if (
+                typeof body === "string" ||
+                body instanceof FormData
+            ) {
+                requestBody = body;
+            } else {
+                requestHeaders["Content-Type"] = "application/json";
+                requestBody = JSON.stringify(body);
+            }
+        }
+
+        let response;
+
+        try {
+            response = await fetch(`${API_BASE_URL}${path}`, {
+                ...fetchOptions,
+                method,
+                headers: requestHeaders,
+                body: requestBody
+            });
+        } catch (error) {
+            if (error.name === "AbortError") {
+                throw error;
+            }
+
+            throw new Error(
+                "Unable to connect to the backend. " +
+                "Check that the FastAPI server is running at " +
+                `${API_BASE_URL}.`
+            );
+        }
+
+        const data = await parseResponse(response);
+
+        if (!response.ok) {
+            // Remove an invalid session when the backend rejects it.
+            if (response.status === 401 && auth) {
+                clearSession();
+            }
+
+            throw new Error(
+                getErrorMessage(data, response.status)
+            );
+        }
+
+        return data;
     }
 
-    if (!response.ok) {
-        const errorMessage =
-            typeof data === "object" && data?.detail
-                ? data.detail
-                : `Request failed with status ${response.status}`;
+    // -------------------------------------------------
+    // Authentication
+    // POST /auth/token
+    // -------------------------------------------------
 
-        throw new Error(errorMessage);
-    }
+    async function login(username, password) {
+        const formData = new URLSearchParams();
 
-    return data;
-}
+        formData.append("username", username);
+        formData.append("password", password);
 
-
-// ============================================================
-// Authentication
-// ============================================================
-
-async function login(username, password) {
-
-    const formData = new URLSearchParams();
-
-    formData.append("username", username);
-    formData.append("password", password);
-
-    const response = await fetch(
-        `${API_BASE_URL}/auth/token`,
-        {
+        const response = await request("/auth/token", {
             method: "POST",
+            body: formData.toString(),
+            formEncoded: true,
+            auth: false
+        });
 
-            headers: {
-                "Content-Type":
-                    "application/x-www-form-urlencoded"
-            },
+        saveSession(response);
 
-            body: formData.toString()
-        }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-
-        const errorMessage =
-            data?.detail ||
-            "Login failed. Please check your credentials.";
-
-        throw new Error(errorMessage);
+        return response;
     }
 
-    if (!data.access_token) {
-        throw new Error(
-            "Authentication succeeded but no access token was returned."
+    function logout() {
+        clearSession();
+    }
+
+    // -------------------------------------------------
+    // System Health
+    // GET /health
+    // -------------------------------------------------
+
+    function getHealth() {
+        return request("/health", {
+            auth: false
+        });
+    }
+
+    // -------------------------------------------------
+    // Fraud Alerts
+    // GET /alerts
+    // -------------------------------------------------
+
+    function getAlerts(filters = {}) {
+        const params = new URLSearchParams();
+
+        Object.entries(filters).forEach(([key, value]) => {
+            if (
+                value !== undefined &&
+                value !== null &&
+                value !== ""
+            ) {
+                params.set(key, String(value));
+            }
+        });
+
+        const queryString = params.toString();
+
+        const path = queryString
+            ? `/alerts?${queryString}`
+            : "/alerts";
+
+        return request(path);
+    }
+
+    // -------------------------------------------------
+    // Alert Summary
+    // GET /alerts-summary
+    // -------------------------------------------------
+
+    function getAlertsSummary() {
+        return request("/alerts-summary");
+    }
+
+    // -------------------------------------------------
+    // Update Alert Status
+    // PUT /alerts/{alert_id}/status
+    // -------------------------------------------------
+
+    function updateAlertStatus(alertId, status) {
+        if (alertId === undefined || alertId === null) {
+            throw new Error("An alert ID is required.");
+        }
+
+        if (!status || typeof status !== "string") {
+            throw new Error("A valid alert status is required.");
+        }
+
+        return request(
+            `/alerts/${encodeURIComponent(alertId)}/status`,
+            {
+                method: "PUT",
+                body: { status }
+            }
         );
     }
 
-    setAccessToken(data.access_token);
+    // -------------------------------------------------
+    // Delete Alert
+    // DELETE /alerts/{alert_id}
+    // -------------------------------------------------
 
-    return data;
-}
+    function deleteAlert(alertId) {
+        if (alertId === undefined || alertId === null) {
+            throw new Error("An alert ID is required.");
+        }
 
-
-function logout() {
-    clearAccessToken();
-}
-
-
-// ============================================================
-// Alerts API
-// ============================================================
-
-async function getAlerts(status = "") {
-
-    let endpoint = "/alerts";
-
-    if (status) {
-        endpoint += `?status=${encodeURIComponent(status)}`;
+        return request(
+            `/alerts/${encodeURIComponent(alertId)}`,
+            {
+                method: "DELETE"
+            }
+        );
     }
 
-    return await apiRequest(endpoint, {
-        method: "GET"
-    });
-}
+    // -------------------------------------------------
+    // Single Transaction Prediction
+    // POST /predict
+    // -------------------------------------------------
 
-
-// ============================================================
-// Alert Summary API
-// ============================================================
-
-async function getAlertSummary() {
-
-    return await apiRequest(
-        "/alerts-summary",
-        {
-            method: "GET"
+    function predictTransaction(transactionPayload) {
+        if (
+            !transactionPayload ||
+            typeof transactionPayload !== "object"
+        ) {
+            throw new Error(
+                "Transaction data must be provided as an object."
+            );
         }
-    );
-}
 
-
-// ============================================================
-// Single Alert API
-// ============================================================
-
-async function getAlert(alertId) {
-
-    return await apiRequest(
-        `/alerts/${alertId}`,
-        {
-            method: "GET"
-        }
-    );
-}
-
-
-// ============================================================
-// Update Alert Status
-// ============================================================
-
-async function updateAlertStatus(
-    alertId,
-    status
-) {
-    return await apiRequest(
-        `/alerts/${alertId}/status?status=${encodeURIComponent(status)}`,
-        {
-            method: "PUT",
-            body: JSON.stringify({
-                status: status
-            })
-        }
-    );
-}
-
-
-// ============================================================
-// Delete Alert
-// ============================================================
-
-async function deleteAlert(alertId) {
-
-    return await apiRequest(
-        `/alerts/${alertId}`,
-        {
-            method: "DELETE"
-        }
-    );
-}
-
-
-// ============================================================
-// Health Check
-// ============================================================
-
-async function getHealth() {
-
-    return await apiRequest(
-        "/health",
-        {
-            method: "GET"
-        }
-    );
-}
-
-
-// ============================================================
-// Root API Status
-// ============================================================
-
-async function getApiStatus() {
-
-    return await apiRequest(
-        "/",
-        {
-            method: "GET"
-        }
-    );
-}
-
-
-// ============================================================
-// Fraud Prediction
-// ============================================================
-
-async function predictTransaction(transaction, threshold = null) {
-    let endpoint = "/predict";
-    if (threshold !== null && threshold !== undefined && threshold !== "") {
-        endpoint += `?threshold=${encodeURIComponent(threshold)}`;
-    }
-
-    return await apiRequest(
-        endpoint,
-        {
+        return request("/predict", {
             method: "POST",
-            body: JSON.stringify(transaction)
-        }
-    );
-}
-
-
-// ============================================================
-// Batch Prediction
-// ============================================================
-
-async function predictBatch(transactions, threshold = null) {
-    let endpoint = "/batch-predict";
-    if (threshold !== null && threshold !== undefined && threshold !== "") {
-        endpoint += `?threshold=${encodeURIComponent(threshold)}`;
+            body: transactionPayload
+        });
     }
 
-    return await apiRequest(
-        endpoint,
-        {
-            method: "POST",
-            body: JSON.stringify({
-                transactions: transactions
-            })
+    // -------------------------------------------------
+    // Batch Transaction Prediction
+    // POST /batch-predict
+    // -------------------------------------------------
+
+    function batchPredict(batchPayload) {
+        if (
+            !batchPayload ||
+            typeof batchPayload !== "object"
+        ) {
+            throw new Error(
+                "Batch prediction data must be provided as an object."
+            );
         }
-    );
-}
 
+        return request("/batch-predict", {
+            method: "POST",
+            body: batchPayload
+        });
+    }
 
-async function getSample197Batch() {
-    return await apiRequest("/sample-197-batch", {
-        method: "GET"
+    // -------------------------------------------------
+    // Model Monitoring
+    // GET /model/monitoring-stats
+    // -------------------------------------------------
+
+    function getMonitoringStats() {
+        return request("/model/monitoring-stats");
+    }
+
+    // -------------------------------------------------
+    // Public API
+    // Other frontend JavaScript files can use FraudAPI.
+    // -------------------------------------------------
+
+    window.FraudAPI = Object.freeze({
+        baseUrl: API_BASE_URL,
+
+        request,
+
+        login,
+        logout,
+        getToken,
+        getUserRole,
+        isAuthenticated,
+        clearSession,
+
+        getHealth,
+
+        getAlerts,
+        getAlertsSummary,
+        updateAlertStatus,
+        deleteAlert,
+
+        predictTransaction,
+        batchPredict,
+
+        getMonitoringStats
     });
-}
 
-
-// ============================================================
-// Export Functions
-// ============================================================
-
-window.FraudAPI = {
-    getAccessToken,
-    setAccessToken,
-    clearAccessToken,
-    isAuthenticated,
-
-    login,
-    logout,
-
-    getAlerts,
-    getAlertSummary,
-    getAlert,
-
-    updateAlertStatus,
-    deleteAlert,
-
-    getHealth,
-    getApiStatus,
-
-    predictTransaction,
-    predictBatch,
-    getSample197Batch,
-};
+})();

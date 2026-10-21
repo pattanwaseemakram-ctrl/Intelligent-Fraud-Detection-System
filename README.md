@@ -1,6 +1,6 @@
 # Financial Fraud Detection System
 
-An enterprise-grade Machine Learning system designed to detect fraudulent financial transactions in real time while maintaining high precision, high recall, and near-zero false alarms.
+An enterprise-grade, end-to-end Machine Learning and Security Operations platform designed to detect fraudulent financial transactions in real time with high precision, high recall, and near-zero false alarms.
 
 ---
 
@@ -8,7 +8,7 @@ An enterprise-grade Machine Learning system designed to detect fraudulent financ
 
 Evaluated on an untouched hold-out test set of **2,000 transactions** (1,800 legitimate, 200 fraudulent):
 
-| Metric | Baseline ($T = 0.50$) | Optimized ($T = 0.42$) | Performance Impact |
+| Metric | Baseline ($T = 0.50$) | Calibrated ($T = 0.42$) | Performance Impact |
 | :--- | :---: | :---: | :--- |
 | **Recall (Fraud Caught)** | 97.00% (194/200) | **98.50% (197/200)** | 🟢 **Catches 3 additional frauds** |
 | **Missed Frauds (FN)** | 6 missed | **3 missed** | 🟢 **Missed fraud rate cut by 50%** |
@@ -19,19 +19,32 @@ Evaluated on an untouched hold-out test set of **2,000 transactions** (1,800 leg
 | **ROC-AUC** | **0.9967** | **0.9967** | Outstanding discriminative ability |
 | **PR-AUC** | **0.9712** | **0.9712** | Superior performance on imbalanced class |
 
-### Confusion Matrix (Optimized Operating Threshold = 0.42)
-```
+### Confusion Matrix (Operating Threshold $T = 0.42$)
+
+```text
                      Predicted Normal (0)   Predicted Suspicious (1)
 Actual Normal (0)            1,764                      36          (False Alarms)
 Actual Suspicious (1)            3                     197          (Frauds Caught)
                              (Missed)
 ```
 
+### Financial Impact of Threshold Calibration ($T = 0.42$)
+
+At the default threshold of `0.50`, 6 frauds escaped. Calibrating the operating point to **`0.42`** rescued **3 high-value fraud transactions** with minimal analyst review overhead (+8 false alarms in 1,800 normal cases):
+
+| Transaction ID | Type | Location | Fraud Probability | Amount | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`T5438`** | Transfer | New York | **0.4631** | ₹3,379.23 | **Caught at 0.42** |
+| **`T6552`** | Withdrawal | New York | **0.4277** | ₹5,574.16 | **Caught at 0.42** |
+| **`T6165`** | Withdrawal | Florida | **0.4204** | ₹3,081.05 | **Caught at 0.42** |
+
+> **Total Intercepted Fraud Value:** **₹1,224,880.04** (~₹12.25 Lakhs) across all 197 caught frauds, recovering an extra **₹12,034.44** specifically through threshold calibration.
+
 ---
 
 ## System Architecture
 
-```
+```text
 Financial-Fraud-Detection-System/
 │
 ├── Dataset/
@@ -82,22 +95,39 @@ Financial-Fraud-Detection-System/
 │   │       ├── roc_curve.png                     # ROC curve (AUC = 0.9967)
 │   │       └── precision_recall_curve.png        # Precision-Recall curve (PR-AUC = 0.9712)
 │   └── results/
-│       └── final_fraud_predictions.csv           # Scored transactions with fraud probabilities & risk tiers
+│       ├── final_fraud_predictions.csv           # Scored transactions with fraud probabilities
+│       ├── predicted_197_frauds.csv              # Complete dataset of all 197 caught fraud cases
+│       ├── predicted_233_suspicious_total.csv    # All 233 flagged cases (197 true + 36 false alarms)
+│       └── request_body_197_transactions.json    # JSON batch payload for API testing
 │
 ├── backend/
-│   ├── app.py                                    # FastAPI REST API application & endpoints
-│   ├── model_service.py                          # Feature preparation & calibrated model scoring service
+│   ├── app.py                                    # Slim FastAPI entry point & router mounting
+│   ├── config.py                                 # Environment, paths, logging, CORS & lifespan
+│   ├── auth.py                                   # OAuth2 scheme, Bearer token verification & login
 │   ├── schemas.py                                # Pydantic request & response validation models
+│   ├── model_service.py                          # Feature preparation & calibrated model scoring
 │   ├── alert_service.py                          # PostgreSQL & SQLite alert management service
-│   └── predict_197_batch_api.py                  # API verification script for 197 test-set frauds
+│   ├── predict_197_batch_api.py                  # Automated batch inference test script for 197 frauds
+│   └── routes/
+│       ├── __init__.py                           # Router package initialization
+│       ├── prediction_routes.py                  # /predict, /batch-predict, /sample-197-batch
+│       ├── alert_routes.py                       # /alerts, /alerts/{id}, /status, /alerts-summary
+│       └── system_routes.py                      # /, /api, /health, /model/monitoring-stats
 │
 ├── frontend/
-│   ├── index.html                                # Enterprise SOC Fraud Monitoring Dashboard
+│   ├── landing.html                              # High-impact platform landing page
+│   ├── login.html                                # Secure portal login with password toggle
+│   ├── dashboard.html                            # Enterprise SOC Fraud Monitoring Dashboard
 │   ├── css/
-│   │   └── style.css                             # Luxury dark fintech theme & gauge styling
+│   │   ├── common.css                            # Shared design tokens, typography & base reset
+│   │   ├── landing.css                           # Landing page styling & animations
+│   │   ├── login.css                             # Authentication card & state styling
+│   │   └── dashboard.css                         # Dark fintech UI, 4-column layout & chart styles
 │   └── js/
-│       ├── api.js                                # OAuth2 & REST API client layer
-│       └── dashboard.js                          # Live predictor engine, batch runner & alert triage
+│       ├── api.js                                # REST API client layer & token management
+│       ├── landing.js                            # Landing page interactions
+│       ├── login.js                              # Login validation & session handling
+│       └── dashboard.js                          # Real-time predictor, charts & alert triage
 │
 ├── requirements.txt                              # Pinned Python package dependencies
 ├── .gitignore                                    # Version control exclusion rules
@@ -108,7 +138,7 @@ Financial-Fraud-Detection-System/
 
 ## Machine Learning Pipeline
 
-```
+```text
 Raw Data (10,000 Transactions)
        |
        v
@@ -151,119 +181,148 @@ Raw Data (10,000 Transactions)
 
 ---
 
-## Key Features Used by the Model
+## Top 11 Engineered Features
 
 The Random Forest feature selection identified the top 11 predictive features:
 
-1. **`Spending_Deviation_Amount`**: High transaction value coinciding with abnormal spending behavior.
-2. **`User Device Recognition`**: Whether the device was unrecognized (strong fraud signal).
-3. **`Spending Pattern Deviation`**: Behavioral anomaly flag.
-4. **`Login Location Match`**: Login location mismatch indicator.
-5. **`Known Threat Flag`**: Previous malicious/blacklist flag.
-6. **`Location_Deviation`**: Inverted login location flag.
-7. **`Amount_Percent_of_Balance`**: Ratio of amount to available balance.
-8. **`Amount`**: Transaction volume.
-9. **`Amount_to_Balance_Ratio`**: Direct drain ratio.
-10. **`Account Balance`**: Available customer balance.
-11. **`Transaction_Hour`**: Time of day transaction was initiated.
+1. **`Known Threat Flag`** (`+14.3364` weight): Historical blacklist or malicious entity flag.
+2. **`User Device Recognition`** (`-12.2717` weight): Strongest trust factor; unrecognized device indicates potential takeover.
+3. **`Spending Pattern Deviation`** (`+11.3099` weight): Sudden behavioral anomaly compared to user history.
+4. **`Login Location Match`** (`-7.4762` weight): Whether login IP city matches account registration.
+5. **`Location_Deviation`** (`+5.0270` weight): Inverted location trust indicator.
+6. **`Amount`** (`+3.1715` weight): High transaction volume.
+7. **`Account Balance`** (`-1.6061` weight): Depleted balance ratio.
+8. **`Spending_Deviation_Amount`**: Product of transaction amount and deviation.
+9. **`Amount_Percent_of_Balance`**: Ratio of amount to available funds.
+10. **`Amount_to_Balance_Ratio`**: Direct drain percentage.
+11. **`Transaction_Hour`**: Initiated during anomalous hours (e.g. 2:00 AM – 5:00 AM).
+
+---
+
+## REST API Architecture & Endpoints
+
+The backend is built with **FastAPI** using a modular `APIRouter` design pattern.
+
+### API Endpoints Summary
+
+| Tag | Method | Endpoint | Description | Auth Required |
+| :--- | :---: | :--- | :--- | :---: |
+| **Authentication & Security** | `POST` | `/auth/token` | Authenticate and obtain Bearer access token | No |
+| | `POST` | `/token` | Backward-compatible token endpoint alias | No |
+| **Fraud Prediction Engine** | `POST` | `/predict` | Real-time single transaction scoring | 🔒 Yes |
+| | `POST` | `/batch-predict` | Batch transaction scoring with auto-alert sync | 🔒 Yes |
+| | `GET` | `/sample-197-batch` | Load pre-formatted 197 test-set transactions | No |
+| **Fraud Alert Management** | `GET` | `/alerts` | Retrieve alerts with optional status filter | 🔒 Yes |
+| | `GET` | `/alerts/{alert_id}` | Retrieve details of a specific alert | 🔒 Yes |
+| | `PUT` | `/alerts/{alert_id}/status` | Update alert status (`New`, `Under Review`, `Resolved`) | 🔒 Yes |
+| | `DELETE` | `/alerts/{alert_id}` | Remove an alert from database | 🔒 Yes |
+| | `GET` | `/alerts-summary` | KPI counts of total, new, review, resolved alerts | 🔒 Yes |
+| **System Health & Monitoring** | `GET` | `/` | Service root and endpoint discovery | No |
+| | `GET` | `/health` | Health status of API, model, and PostgreSQL database | No |
+| | `GET` | `/model/monitoring-stats` | Live model operating stats and threshold configuration | 🔒 Yes |
+
+---
+
+## Frontend Web Application
+
+The frontend is built using standard Vanilla Web Technologies (HTML5, Vanilla CSS, Modern JavaScript) with a luxury dark fintech theme.
+
+### Key Pages & Capabilities
+
+1. **Landing Portal (`landing.html`)**:
+   - Platform introduction, capability highlights, and direct login navigation.
+2. **Secure Login (`login.html`)**:
+   - Form-based OAuth2 authentication with password reveal/hide toggle and validation error states.
+3. **SOC Fraud Monitoring Dashboard (`dashboard.html`)**:
+   - **Overview**: Real-time KPI summary cards (Total Alerts, New Cases, Under Review, Resolved) and activity timeline.
+   - **Real-Time Fraud Prediction**:
+     - Ergonomic **4-Column Vertical Layout**:
+       - `01. Transaction Identity`: Transaction ID, Timestamp, Sender Account, Receiver Account.
+       - `02. Transaction Attributes`: Amount (₹), Type, Account Balance (₹), Spending Deviation.
+       - `03. Device & Location`: Device ID, IP Address, Transaction Location.
+       - `04. Risk Indicators`: Recognized Device, Known Threat Flag, Login Location Match.
+     - **Quick-Clear ('✕') Buttons**: Built-in cross buttons on all text/number/datetime fields to clear already entered inputs with a single click.
+     - **Immediate Result Panel**: Probability gauge, verdict banner (`Suspicious` vs. `Normal`), risk score, and auto-generated database alert note.
+   - **Interactive Analytics & ML Evaluation**:
+     - Dynamic **ROC Curve** ($AUC = 0.9967$).
+     - Dynamic **Precision-Recall (PR) Curve** ($PR-AUC = 0.9712$).
+     - **Live Decision Threshold Tuning Slider**: Adjust threshold dynamically ($0.00 - 1.00$) with preset buttons (`0.42 Calibrated`, `0.50 Standard`, `0.30 High Recall`).
+     - Live **Confusion Matrix Heatmap**: Real-time recalculation of True Positives, False Positives, True Negatives, and False Negatives as the slider moves.
+   - **Alert Management & Triage**:
+     - Interactive table of PostgreSQL alerts with real-time status filtering (`New`, `Under Review`, `Resolved`), search, inline status update buttons, and deletion.
 
 ---
 
 ## How to Run
 
 ### 1. Environment Setup
+
 Clone the repository and install dependencies:
+
 ```bash
 python -m venv venv
+
 # On Windows:
 .\venv\Scripts\activate
+
 # On Linux/macOS:
 source venv/bin/activate
 
 pip install -r requirements.txt
 ```
 
-### 2. Run Data Processing Pipeline (Optional - data is pre-generated)
-```bash
-python pipeline/data_preprocessing.py
-python pipeline/feature_engineering.py
-python pipeline/encoding.py
-python pipeline/feature_scaling.py
-python pipeline/feature_selection.py
+### 2. Configure Environment (`.env`)
+
+Create or verify your `.env` file in the project root:
+
+```env
+# Database Configuration (PostgreSQL with SQLite fallback)
+DB_USER=postgres
+DB_PASSWORD=your_postgres_password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=fraud_detection
+
+# Application Security
+FRAUD_ADMIN_PASSWORD=admin123
+FRAUD_ANALYST_PASSWORD=analyst123
+FRAUD_API_TOKEN=fraud-secret-bearer-token-2026
+
+# CORS
+CORS_ORIGINS=http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:8000,http://localhost:8000
 ```
 
-### 3. Train the Model
-Train the end-to-end model pipeline with cross-validation and export the model artifact:
-```bash
-python final_model/train_model.py
-```
+### 3. Start the FastAPI Backend
 
-### 4. Evaluate on Test Set
-Evaluate the trained model on the 2,000 hold-out test samples:
-```bash
-python final_model/evaluation/final_evaluation.py
-```
-*Outputs: `final_model/evaluation/results/final_evaluation_report.txt` and `confusion_matrix.png`*
+Launch the REST API server:
 
-### 5. Generate ROC & Precision-Recall Curves
-```bash
-python final_model/visualization/final_curves.py
-```
-*Outputs: `final_model/visualization/results/roc_curve.png` and `precision_recall_curve.png`*
-
-### 6. Perform Decision Threshold & Cost Optimization
-Tune the decision threshold across criteria ($F_1$, $F_2$, Youden's $J$, and expected financial cost):
-```bash
-python final_model/threshold_optimization.py
-```
-*Outputs: `threshold_optimization_report.txt`, `threshold_metrics_curve.png`, `threshold_cost_curve.png`, and `threshold_sweep_results.csv`*
-
-### 7. Run Batch Predictions & Risk Scoring
-Generate predictions and risk levels across transactions:
-```bash
-python final_model/final_prediction.py
-```
-*Outputs: `final_model/results/final_fraud_predictions.csv`*
-
-### 8. Run Real-Time Fraud Detection REST API (FastAPI)
-Launch the production REST service:
 ```bash
 uvicorn backend.app:app --reload --port 8000
 ```
-- **Interactive Documentation (Swagger UI)**: `http://localhost:8000/docs`
-- **Health Check & Model Status** (Public): `GET /health`
-- **Single Transaction Scoring** (🔒 Secured): `POST /predict` (with optional `?threshold=0.42`)
-- **Multi-Transaction Batch Scoring** (🔒 Secured): `POST /batch-predict`
-- **Fraud Alerts Management** (🔒 Secured): `GET /alerts`, `GET /alerts-summary`, `PUT /alerts/{id}/status`, `DELETE /alerts/{id}`
 
-#### API Authorization & Swagger UI Lock Symbol (`bearerAuth`)
-All sensitive transaction scoring and alert management routes are secured with **OAuth2 Bearer Authentication (`bearerAuth`)**:
-- **Swagger UI**: Navigate to `http://localhost:8000/docs`, click the **"Authorize"** button (or any **padlock icon 🔒** next to endpoints).
-- **Log in credentials**:
-  - **username**: `admin` &nbsp;|&nbsp; **password**: `admin123`
-  - *(Leave `client_id` and `client_secret` blank)*
-- **Token Endpoint**: `POST /auth/token` (and `POST /token`) receives credentials and issues a secure Bearer access token.
-- **Direct HTTP / cURL**: Pass `-H "Authorization: Bearer <access_token>"` (or master token `fraud-secret-bearer-token-2026`).
+- **Swagger Documentation**: `http://127.0.0.1:8000/docs`
+- **ReDoc Documentation**: `http://127.0.0.1:8000/redoc`
+- **Health Check**: `http://127.0.0.1:8000/health`
 
-### 9. Enterprise Fraud Monitoring & Operations Dashboard (Web UI)
-Launch the browser dashboard directly at:
+### 4. Open the Web Application
+
+Open the frontend using VS Code Live Server or your preferred HTTP server:
+
 ```text
-http://localhost:8000/
+http://127.0.0.1:5500/frontend/landing.html
 ```
-- **Login Screen**: Quick one-click authentication as **Admin (Chief Risk Officer)** or **Analyst (Fraud Investigator)**.
-- **Overview & KPIs**: Real-time stats on total alerts, new cases, triage progress, and risk breakdown.
-- **⚡ Live Fraud Predictor**:
-  - Load preset demo scenarios (e.g., *Account Takeover & Drain*, *Location Anomaly*, *Normal Daily Expense*).
-  - Fine-tune parameters and slider cutoff ($T = 0.42$).
-  - Animated SVG radial risk gauge, fraud verdict banner, and **Explainable AI (XAI)** contributing risk factors.
-  - Automatically records suspicious transactions into PostgreSQL.
-- **📦 Batch Prediction Studio**:
-  - One-click evaluation of all 197 test-set hold-out fraud cases or custom JSON upload.
-  - Live progress telemetry, fraud detection rate, and results preview.
-- **🚨 Alert Investigation & Triage**:
-  - Interactive table of all PostgreSQL fraud alerts with status filtering (`New`, `Under Review`, `Resolved`) and search.
-  - One-click triage actions (`Review`, `Resolve`, `Delete`) and CSV export.
-- **📖 In-App Analyst Guide**: Full documentation of features, the 11 engineered signals, threshold optimization logic, and SOC workflows.
+
+- **Log in credentials**:
+  - Username: `admin` | Password: `admin123` (Chief Risk Officer)
+  - Username: `analyst` | Password: `analyst123` (Fraud Analyst)
+
+### 5. Run Automated Batch Verification (197 Frauds)
+
+To verify that all 197 hold-out fraud cases are caught and synced to PostgreSQL:
+
+```bash
+python backend/predict_197_batch_api.py
+```
 
 ---
 
@@ -273,8 +332,7 @@ http://localhost:8000/
 - **Machine Learning & Pipeline:** `scikit-learn`, `imbalanced-learn`, `xgboost`, `pandas`, `numpy`
 - **Database & ORM:** `PostgreSQL`, `SQLAlchemy 2.0`, `psycopg2-binary` (with automatic SQLite fallback)
 - **API & Serving:** `FastAPI`, `Uvicorn`, `Pydantic v2`
-- **Security:** OAuth2 Password Bearer flow (`bearerAuth`) with role-based access
-- **Frontend & UI:** HTML5, Vanilla CSS (Glassmorphic dark fintech theme), Modern JavaScript (Fetch API, SVG Gauge)
+- **Security:** OAuth2 Password Bearer flow (`bearerAuth`) with Role-Based Access Control (RBAC)
+- **Frontend & UI:** HTML5, Vanilla CSS (Glassmorphic dark fintech theme), Modern JavaScript (Fetch API, Canvas/SVG Charts)
 - **Visualization:** `matplotlib`, `seaborn`
 - **Serialization:** `joblib`
-

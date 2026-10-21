@@ -1,1406 +1,69 @@
-// ============================================================
-// Intelligence Fraud Shield
-// Apex Global Banking - Core Operations & Fraud Engine Controller
-// ============================================================
+/* ============================================================
+   FINANCIAL FRAUD DETECTION SYSTEM
+   Dashboard Controller
+   Frontend: Vanilla JavaScript
+   Backend: FastAPI
+============================================================ */
 
-(function () {
+(() => {
     "use strict";
 
-    // Global Terminal State
-    let cachedAlerts = [];
-    let currentTab = "cockpit";
-    let liveFeedInterval = null;
-    let liveFeedRunning = false;
-    let liveStreamTotal = 0;
-    let liveStreamFrauds = 0;
-    let liveStreamClean = 0;
-    let liveStreamSavedCapital = 0;
-    let soundEnabled = true;
+    // ========================================================
+    // 1. CONFIGURATION AND STATE
+    // ========================================================
 
-    // Web Audio Synthesizer for Institutional Audio Cues
-    let audioCtx = null;
-    function playBeep(type) {
-        if (!soundEnabled) return;
-        try {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === "suspended") {
-                audioCtx.resume();
-            }
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+    const API = window.FraudAPI;
 
-            if (type === "alert") {
-                // High alert double-ping for intercepted fraud
-                osc.type = "sawtooth";
-                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.18);
-                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.18);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.18);
-            } else if (type === "clean") {
-                // Soft chime for approved payment
-                osc.type = "sine";
-                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.12);
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.12);
-            }
-        } catch (e) {
-            // Audio context silently ignored if restricted by browser
+    const state = {
+        currentView: "overview",
+        alerts: [],
+        summary: {},
+        health: null,
+        selectedAlertId: null,
+        loading: false,
+        batchResponse: null
+    };
+
+    const VIEW_NAMES = {
+        overview: "Overview",
+        alerts: "Alert Management",
+        prediction: "Fraud Prediction",
+        analytics: "Analytics & Graphs"
+    };
+
+    const ALERT_STATUSES = [
+        "New",
+        "Under Review",
+        "Resolved"
+    ];
+
+
+    // ========================================================
+    // 2. DOM HELPERS
+    // ========================================================
+
+    function getElement(id) {
+        return document.getElementById(id);
+    }
+
+    function setText(id, value) {
+        const element = getElement(id);
+
+        if (element) {
+            element.textContent = value ?? "—";
         }
     }
 
-    // ============================================================
-    // Motion Graphics Background Engine (Cyber-Financial Stream)
-    // ============================================================
-    function initMotionCanvas() {
-        const canvas = document.getElementById("cyberMotionCanvas");
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        let width = (canvas.width = window.innerWidth);
-        let height = (canvas.height = window.innerHeight);
+    function setHTML(id, value) {
+        const element = getElement(id);
 
-        let mouseX = width / 2;
-        let mouseY = height / 2;
-        let targetMouseX = mouseX;
-        let targetMouseY = mouseY;
-
-        window.addEventListener("mousemove", (e) => {
-            targetMouseX = e.clientX;
-            targetMouseY = e.clientY;
-        });
-
-        window.addEventListener("resize", () => {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            initNodes();
-        });
-
-        // Financial Node Network
-        const NODE_COUNT = Math.min(Math.floor((width * height) / 28000), 55);
-        let nodes = [];
-
-        function initNodes() {
-            nodes = [];
-            for (let i = 0; i < NODE_COUNT; i++) {
-                const isThreat = Math.random() < 0.18;
-                nodes.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    vx: (Math.random() - 0.5) * 0.45,
-                    vy: (Math.random() - 0.5) * 0.45,
-                    radius: isThreat ? Math.random() * 2 + 2.5 : Math.random() * 1.5 + 1.2,
-                    isThreat: isThreat,
-                    pulse: Math.random() * Math.PI * 2,
-                    pulseSpeed: Math.random() * 0.04 + 0.02,
-                });
-            }
-        }
-        initNodes();
-
-        // Liquidity Beziers (Flowing Wire Waves)
-        const WAVES = [
-            { yRatio: 0.25, speed: 0.0008, amp: 55, sparkOffset: 0, type: "gold" },
-            { yRatio: 0.52, speed: 0.0012, amp: 85, sparkOffset: 0.4, type: "crimson" },
-            { yRatio: 0.78, speed: 0.0009, amp: 65, sparkOffset: 0.7, type: "emerald" },
-        ];
-
-        let tick = 0;
-
-        function render() {
-            tick++;
-            // Smooth mouse lag
-            mouseX += (targetMouseX - mouseX) * 0.04;
-            mouseY += (targetMouseY - mouseY) * 0.04;
-            const mouseOffsetX = (mouseX / width - 0.5) * 25;
-            const mouseOffsetY = (mouseY / height - 0.5) * 25;
-
-            const theme = document.body.getAttribute("data-theme") || "gold";
-
-            // Theme-calibrated color maps
-            let bgFill = "#070a12";
-            let orb1Color = "rgba(212, 175, 55, 0.14)";
-            let orb2Color = "rgba(239, 68, 68, 0.10)";
-            let threatNodeColor = "#ef4444";
-            let threatShadow = "rgba(239, 68, 68, 0.8)";
-            let standardNodeColor = "#d4af37";
-            let standardShadow = "rgba(212, 175, 55, 0.65)";
-            let waveGoldColor = "rgba(212, 175, 55, 0.16)";
-            let waveCrimsonColor = "rgba(239, 68, 68, 0.14)";
-            let waveEmeraldColor = "rgba(16, 185, 129, 0.14)";
-
-            if (theme === "cyber") {
-                bgFill = "#030408";
-                orb1Color = "rgba(255, 0, 85, 0.16)";
-                orb2Color = "rgba(0, 255, 136, 0.12)";
-                threatNodeColor = "#ff0033";
-                threatShadow = "rgba(255, 0, 51, 0.85)";
-                standardNodeColor = "#00ff88";
-                standardShadow = "rgba(0, 255, 136, 0.7)";
-                waveGoldColor = "rgba(255, 0, 85, 0.18)";
-                waveCrimsonColor = "rgba(255, 0, 51, 0.18)";
-                waveEmeraldColor = "rgba(0, 255, 136, 0.16)";
-            } else if (theme === "obsidian") {
-                bgFill = "#040406";
-                orb1Color = "rgba(255, 255, 255, 0.10)";
-                orb2Color = "rgba(255, 51, 75, 0.12)";
-                threatNodeColor = "#ff334b";
-                threatShadow = "rgba(255, 51, 75, 0.8)";
-                standardNodeColor = "#e2e8f0";
-                standardShadow = "rgba(255, 255, 255, 0.6)";
-                waveGoldColor = "rgba(226, 232, 240, 0.14)";
-                waveCrimsonColor = "rgba(255, 51, 75, 0.14)";
-                waveEmeraldColor = "rgba(16, 185, 129, 0.12)";
-            } else if (theme === "light") {
-                bgFill = "#f4f6fa";
-                orb1Color = "rgba(184, 134, 11, 0.08)";
-                orb2Color = "rgba(220, 38, 38, 0.06)";
-                threatNodeColor = "#dc2626";
-                threatShadow = "rgba(220, 38, 38, 0.4)";
-                standardNodeColor = "#b8860b";
-                standardShadow = "rgba(184, 134, 11, 0.4)";
-                waveGoldColor = "rgba(184, 134, 11, 0.12)";
-                waveCrimsonColor = "rgba(220, 38, 38, 0.10)";
-                waveEmeraldColor = "rgba(5, 150, 105, 0.10)";
-            }
-
-            // 0. Space background with theme clear
-            ctx.fillStyle = bgFill;
-            ctx.fillRect(0, 0, width, height);
-
-            // 1. Ambient Breathing Radial Orbs
-            const orb1X = width * 0.2 + Math.sin(tick * 0.008) * 60 + mouseOffsetX;
-            const orb1Y = height * 0.3 + Math.cos(tick * 0.007) * 40 + mouseOffsetY;
-            const grad1 = ctx.createRadialGradient(orb1X, orb1Y, 10, orb1X, orb1Y, width * 0.45);
-            grad1.addColorStop(0, orb1Color);
-            grad1.addColorStop(0.5, "rgba(0, 0, 0, 0.05)");
-            grad1.addColorStop(1, "transparent");
-            ctx.fillStyle = grad1;
-            ctx.fillRect(0, 0, width, height);
-
-            const orb2X = width * 0.8 + Math.cos(tick * 0.009) * 50 - mouseOffsetX;
-            const orb2Y = height * 0.7 + Math.sin(tick * 0.006) * 50 - mouseOffsetY;
-            const grad2 = ctx.createRadialGradient(orb2X, orb2Y, 10, orb2X, orb2Y, width * 0.38);
-            grad2.addColorStop(0, orb2Color);
-            grad2.addColorStop(0.6, "transparent");
-            ctx.fillStyle = grad2;
-            ctx.fillRect(0, 0, width, height);
-
-            // 2. Flowing Liquidity Wire Waves with Traveling Sparks
-            WAVES.forEach((wave) => {
-                ctx.beginPath();
-                const baseY = height * wave.yRatio;
-                ctx.moveTo(0, baseY);
-                for (let x = 0; x <= width; x += 40) {
-                    const y = baseY + Math.sin(x * 0.003 + tick * wave.speed * 60) * wave.amp + Math.cos(x * 0.002 + tick * 0.01) * 20;
-                    ctx.lineTo(x, y);
-                }
-                const waveStroke = wave.type === "gold" ? waveGoldColor : (wave.type === "crimson" ? waveCrimsonColor : waveEmeraldColor);
-                ctx.strokeStyle = waveStroke;
-                ctx.lineWidth = 1.8;
-                ctx.stroke();
-
-                // Spark particle traveling along the wave
-                const sparkProg = (tick * 0.002 + wave.sparkOffset) % 1;
-                const sparkX = sparkProg * width;
-                const sparkY = baseY + Math.sin(sparkX * 0.003 + tick * wave.speed * 60) * wave.amp + Math.cos(sparkX * 0.002 + tick * 0.01) * 20;
-                ctx.beginPath();
-                ctx.arc(sparkX, sparkY, 3, 0, Math.PI * 2);
-                ctx.fillStyle = wave.type === "crimson" ? threatNodeColor : (wave.type === "emerald" ? "#10b981" : standardNodeColor);
-                ctx.shadowColor = ctx.fillStyle;
-                ctx.shadowBlur = 10;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            });
-
-            // 3. Financial Node Constellation
-            for (let i = 0; i < nodes.length; i++) {
-                const node = nodes[i];
-                node.x += node.vx;
-                node.y += node.vy;
-                node.pulse += node.pulseSpeed;
-
-                if (node.x < 0) node.x = width;
-                if (node.x > width) node.x = 0;
-                if (node.y < 0) node.y = height;
-                if (node.y > height) node.y = 0;
-
-                // Connecting filaments
-                for (let j = i + 1; j < nodes.length; j++) {
-                    const other = nodes[j];
-                    const dx = other.x - node.x;
-                    const dy = other.y - node.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < 130) {
-                        const alpha = (1 - dist / 130) * 0.16;
-                        ctx.beginPath();
-                        ctx.moveTo(node.x, node.y);
-                        ctx.lineTo(other.x, other.y);
-                        ctx.strokeStyle = (node.isThreat || other.isThreat)
-                            ? `rgba(239, 68, 68, ${alpha * 1.5})`
-                            : (theme === "cyber" ? `rgba(0, 255, 136, ${alpha})` : `rgba(212, 175, 55, ${alpha})`);
-                        ctx.lineWidth = 0.8;
-                        ctx.stroke();
-                    }
-                }
-
-                // Render node
-                ctx.beginPath();
-                const currentRadius = node.radius + Math.sin(node.pulse) * 0.6;
-                ctx.arc(node.x, node.y, Math.max(currentRadius, 1), 0, Math.PI * 2);
-
-                if (node.isThreat) {
-                    ctx.fillStyle = threatNodeColor;
-                    ctx.shadowColor = threatShadow;
-                    ctx.shadowBlur = 12;
-                } else {
-                    ctx.fillStyle = standardNodeColor;
-                    ctx.shadowColor = standardShadow;
-                    ctx.shadowBlur = 8;
-                }
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            }
-
-            requestAnimationFrame(render);
-        }
-
-        render();
-    }
-
-    // DOM Elements - Shell & Navigation
-    const authPortalSection = document.getElementById("authPortalSection");
-    const bankingWorkspace = document.getElementById("bankingWorkspace");
-    const bankNavHub = document.getElementById("bankNavHub");
-    const operatorBadge = document.getElementById("operatorBadge");
-    const operatorName = document.getElementById("operatorName");
-    const operatorRole = document.getElementById("operatorRole");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const systemRefreshBtn = document.getElementById("systemRefreshBtn");
-    const soundToggleBtn = document.getElementById("soundToggleBtn");
-    const soundIcon = document.getElementById("soundIcon");
-    const liveClock = document.getElementById("liveClock");
-    const latencyPill = document.getElementById("latencyPill");
-    const activeAlertBadge = document.getElementById("activeAlertBadge");
-
-    // Header Status Pills
-    const apiStatusPill = document.getElementById("apiStatusPill");
-    const dbStatusPill = document.getElementById("dbStatusPill");
-    const cutoffStatusPill = document.getElementById("cutoffStatusPill");
-
-    // Login Form Elements
-    const bankingAuthForm = document.getElementById("bankingAuthForm");
-    const authUsername = document.getElementById("authUsername");
-    const authPassword = document.getElementById("authPassword");
-    const authSubmitBtn = document.getElementById("authSubmitBtn");
-    const authErrorMessage = document.getElementById("authErrorMessage");
-    const btnAdminQuickLogin = document.getElementById("btnAdminQuickLogin");
-    const btnAnalystQuickLogin = document.getElementById("btnAnalystQuickLogin");
-
-    // Cockpit Elements (Tab 1)
-    const lastSyncTime = document.getElementById("lastSyncTime");
-    const statTotalAlerts = document.getElementById("statTotalAlerts");
-    const statNewAlerts = document.getElementById("statNewAlerts");
-    const statUnderReview = document.getElementById("statUnderReview");
-    const statResolved = document.getElementById("statResolved");
-    const barHighCount = document.getElementById("barHighCount");
-    const barMedCount = document.getElementById("barMedCount");
-    const barLowCount = document.getElementById("barLowCount");
-    const barHighFill = document.getElementById("barHighFill");
-    const barMedFill = document.getElementById("barMedFill");
-    const barLowFill = document.getElementById("barLowFill");
-    const cockpitDbState = document.getElementById("cockpitDbState");
-    const cockpitMiniAlerts = document.getElementById("cockpitMiniAlerts");
-
-    // Simulator Elements (Tab 2)
-    const wireTransferForm = document.getElementById("wireTransferForm");
-    const btnGenNewWireId = document.getElementById("btnGenNewWireId");
-    const btnPresetAttack = document.getElementById("btnPresetAttack");
-    const btnPresetAnomaly = document.getElementById("btnPresetAnomaly");
-    const btnPresetClean = document.getElementById("btnPresetClean");
-    const wireDeviation = document.getElementById("wireDeviation");
-    const wireDeviationBadge = document.getElementById("wireDeviationBadge");
-    const wireThreshold = document.getElementById("wireThreshold");
-    const wireThresholdBadge = document.getElementById("wireThresholdBadge");
-    const btnExecuteScoring = document.getElementById("btnExecuteScoring");
-
-    // Simulator HUD Elements
-    const hudTimestamp = document.getElementById("hudTimestamp");
-    const hudEmptyState = document.getElementById("hudEmptyState");
-    const hudLiveScored = document.getElementById("hudLiveScored");
-    const hudGaugeFill = document.getElementById("hudGaugeFill");
-    const hudGaugeNeedleDot = document.getElementById("hudGaugeNeedleDot");
-    const hudRiskScore = document.getElementById("hudRiskScore");
-    const hudVerdictBanner = document.getElementById("hudVerdictBanner");
-    const hudVerdictIcon = document.getElementById("hudVerdictIcon");
-    const hudVerdictText = document.getElementById("hudVerdictText");
-    const hudProbVal = document.getElementById("hudProbVal");
-    const hudTierVal = document.getElementById("hudTierVal");
-    const hudCutoffVal = document.getElementById("hudCutoffVal");
-    const hudDbSyncVal = document.getElementById("hudDbSyncVal");
-    const hudXaiList = document.getElementById("hudXaiList");
-
-    // Live Stream Elements (Tab 3)
-    const btnToggleLiveFeed = document.getElementById("btnToggleLiveFeed");
-    const liveFeedIcon = document.getElementById("liveFeedIcon");
-    const liveFeedText = document.getElementById("liveFeedText");
-    const btnClearLiveFeed = document.getElementById("btnClearLiveFeed");
-    const streamCount = document.getElementById("streamCount");
-    const streamFraudCount = document.getElementById("streamFraudCount");
-    const streamCleanCount = document.getElementById("streamCleanCount");
-    const streamSavedCapital = document.getElementById("streamSavedCapital");
-    const streamTableBody = document.getElementById("streamTableBody");
-
-    // Batch Elements (Tab 4)
-    const btnExecute197Batch = document.getElementById("btnExecute197Batch");
-    const batchCustomFileInput = document.getElementById("batchCustomFileInput");
-    const batchCustomFileLabel = document.getElementById("batchCustomFileLabel");
-    const batchLoadingIndicator = document.getElementById("batchLoadingIndicator");
-    const batchResultsHub = document.getElementById("batchResultsHub");
-    const batchLatencyBadge = document.getElementById("batchLatencyBadge");
-    const bmTotal = document.getElementById("bmTotal");
-    const bmSuspicious = document.getElementById("bmSuspicious");
-    const bmNormal = document.getElementById("bmNormal");
-    const bmRate = document.getElementById("bmRate");
-    const bmAvgRisk = document.getElementById("bmAvgRisk");
-    const batchPreviewTableBody = document.getElementById("batchPreviewTableBody");
-
-    // Triage Desk Elements (Tab 5)
-    const triageStatusFilter = document.getElementById("triageStatusFilter");
-    const triageRiskFilter = document.getElementById("triageRiskFilter");
-    const triageSearchInput = document.getElementById("triageSearchInput");
-    const triageLoadingMsg = document.getElementById("triageLoadingMsg");
-    const triageErrorMsg = document.getElementById("triageErrorMsg");
-    const triageTableBody = document.getElementById("triageTableBody");
-    const triageCountLabel = document.getElementById("triageCountLabel");
-    const btnExportTriageCsv = document.getElementById("btnExportTriageCsv");
-    const btnReloadTriage = document.getElementById("btnReloadTriage");
-
-    // Toast Hub
-    const toastNotification = document.getElementById("toastNotification");
-    const toastIcon = document.getElementById("toastIcon");
-    const toastMessage = document.getElementById("toastMessage");
-
-    // ============================================================
-    // Toast Notification System
-    // ============================================================
-    function showToast(message, type = "success") {
-        if (!toastNotification || !toastMessage) return;
-        toastMessage.textContent = message;
-        toastIcon.textContent = type === "error" ? "🚨" : type === "warning" ? "⚠️" : "🔔";
-        toastNotification.className = `toast-hub ${type}`;
-        toastNotification.classList.remove("hidden");
-
-        setTimeout(() => {
-            toastNotification.classList.add("hidden");
-        }, 3800);
-    }
-
-    // ============================================================
-    // Real-Time Clock & Network Latency Simulator
-    // ============================================================
-    function updateClock() {
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        if (liveClock) liveClock.textContent = `${timeStr} (UTC+5:30)`;
-
-        // Periodic jitter for realistic latency telemetry
-        if (latencyPill && Math.random() < 0.15) {
-            const jitter = Math.floor(16 + Math.random() * 8);
-            latencyPill.textContent = `${jitter}ms`;
-        }
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // ============================================================
-    // Tab Navigation Routing
-    // ============================================================
-    function switchTab(tabName) {
-        currentTab = tabName;
-        const tabs = document.querySelectorAll(".bank-nav-tab");
-        const views = document.querySelectorAll(".workspace-view");
-
-        tabs.forEach((tab) => {
-            if (tab.getAttribute("data-tab") === tabName) {
-                tab.classList.add("active");
-            } else {
-                tab.classList.remove("active");
-            }
-        });
-
-        views.forEach((view) => {
-            if (view.id === `view-${tabName}`) {
-                view.classList.add("active");
-            } else {
-                view.classList.remove("active");
-            }
-        });
-
-        // Toggle side cockpit button states
-        const sideBtns = document.querySelectorAll(".btn-side-theater-quick, .btn-globe-side-cockpit");
-        sideBtns.forEach((btn) => {
-            if (tabName === "cockpit") {
-                btn.classList.add("active");
-            } else {
-                btn.classList.remove("active");
-            }
-        });
-
-        if (tabName === "triage") {
-            loadTriageCases();
-        } else if (tabName === "cockpit") {
-            loadCockpitData();
-            if (window.SatelliteDefense && typeof window.SatelliteDefense.init === "function") {
-                setTimeout(() => {
-                    window.dispatchEvent(new Event("resize"));
-                }, 80);
-            }
+        if (element) {
+            element.innerHTML = value;
         }
     }
 
-    // ============================================================
-    // Authentication State Management
-    // ============================================================
-    function setOperatorAuthenticated(username, role) {
-        authPortalSection.classList.add("hidden");
-        bankingWorkspace.classList.remove("hidden");
-        bankNavHub.classList.remove("hidden");
-        operatorBadge.classList.remove("hidden");
-        logoutBtn.classList.remove("hidden");
-
-        const sideDock = document.getElementById("sideTheaterQuickDock");
-        if (sideDock) sideDock.classList.remove("hidden");
-
-        if (operatorName) operatorName.textContent = username.toUpperCase();
-        if (operatorRole) operatorRole.textContent = role || "Risk Operations Officer";
-
-        loadCockpitData();
-    }
-
-    function setOperatorLoggedOut() {
-        authPortalSection.classList.remove("hidden");
-        bankingWorkspace.classList.add("hidden");
-        bankNavHub.classList.add("hidden");
-        operatorBadge.classList.add("hidden");
-        logoutBtn.classList.add("hidden");
-
-        const sideDock = document.getElementById("sideTheaterQuickDock");
-        if (sideDock) sideDock.classList.add("hidden");
-
-        if (liveFeedRunning) stopLiveFeed();
-    }
-
-    async function handleAuthLogin(event) {
-        if (event) event.preventDefault();
-        authErrorMessage.textContent = "";
-
-        const user = authUsername.value.trim();
-        const pass = authPassword.value;
-
-        if (!user || !pass) {
-            authErrorMessage.textContent = "Please provide operator username and key.";
-            return;
-        }
-
-        authSubmitBtn.disabled = true;
-        authSubmitBtn.innerHTML = `<span class="banking-spinner" style="width:14px;height:14px;margin:0 8px 0 0;display:inline-block;vertical-align:middle;border-width:2px;"></span> Validating Clearance...`;
-
-        try {
-            const data = await window.FraudAPI.login(user, pass);
-            setOperatorAuthenticated(user, data.user_role);
-            authUsername.value = "";
-            authPassword.value = "";
-            showToast(`Operator Clearance Approved. Welcome, ${user}.`, "success");
-        } catch (err) {
-            authErrorMessage.textContent = err.message || "Invalid credentials.";
-            showToast("Security Clearance Denied: Invalid credentials.", "error");
-        } finally {
-            authSubmitBtn.disabled = false;
-            authSubmitBtn.innerHTML = `<span class="btn-sheen"></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>Authenticate & Unlock Terminal</span>`;
-        }
-    }
-
-    function handleLogout() {
-        window.FraudAPI.logout();
-        setOperatorLoggedOut();
-        showToast("Session terminated. Terminal locked.", "success");
-    }
-
-    // ============================================================
-    // Cockpit Telemetry & Metrics Loading
-    // ============================================================
-    async function loadCockpitData() {
-        try {
-            await Promise.all([
-                loadSystemHealth(),
-                loadAlertSummaryData(),
-                loadAlertsForDistribution(),
-            ]);
-
-            if (lastSyncTime) lastSyncTime.textContent = new Date().toLocaleTimeString();
-        } catch (e) {
-            console.error("Cockpit refresh failure:", e);
-        }
-    }
-
-    async function loadSystemHealth() {
-        try {
-            const health = await window.FraudAPI.getHealth();
-            const dbConnected = health.database && health.database.status === "connected";
-
-            if (apiStatusPill) {
-                apiStatusPill.textContent = "ONLINE";
-                apiStatusPill.className = "telemetry-val text-green";
-            }
-
-            if (dbStatusPill) {
-                const dbType = (health.database?.database_type || "PostgreSQL").toUpperCase();
-                dbStatusPill.textContent = dbConnected ? dbType : "FALLBACK";
-                dbStatusPill.className = dbConnected ? "telemetry-val text-green" : "telemetry-val text-yellow";
-            }
-
-            if (cockpitDbState && health.database) {
-                cockpitDbState.textContent = `CONNECTED (${health.database.database_name || "fraud_detection"})`;
-            }
-
-            if (cutoffStatusPill && health.calibrated_threshold !== undefined) {
-                cutoffStatusPill.textContent = `T = ${Number(health.calibrated_threshold).toFixed(2)}`;
-            }
-        } catch (e) {
-            if (apiStatusPill) {
-                apiStatusPill.textContent = "OFFLINE";
-                apiStatusPill.className = "telemetry-val text-danger";
-            }
-        }
-    }
-
-    async function loadAlertSummaryData() {
-        try {
-            const summary = await window.FraudAPI.getAlertSummary();
-            const total = Number(summary.total_alerts || 0);
-            const newCases = Number(summary.new_alerts || 0);
-            const underReview = Number(summary.under_review || 0);
-            const resolved = Number(summary.resolved || 0);
-
-            if (statTotalAlerts) statTotalAlerts.textContent = total;
-            if (statNewAlerts) statNewAlerts.textContent = newCases;
-            if (statUnderReview) statUnderReview.textContent = underReview;
-            if (statResolved) statResolved.textContent = resolved;
-            if (activeAlertBadge) activeAlertBadge.textContent = total;
-        } catch (e) {
-            console.error("Error reading alert summary:", e);
-        }
-    }
-
-    async function loadAlertsForDistribution() {
-        try {
-            const response = await window.FraudAPI.getAlerts();
-            cachedAlerts = Array.isArray(response?.alerts) ? response.alerts : [];
-
-            // Calculate Severity Distribution
-            let high = 0, med = 0, low = 0;
-            cachedAlerts.forEach((a) => {
-                const lvl = String(a.risk_level || "").toLowerCase();
-                if (lvl === "high") high++;
-                else if (lvl === "medium") med++;
-                else if (lvl === "low") low++;
-            });
-
-            if (barHighCount) barHighCount.textContent = `${high} cases`;
-            if (barMedCount) barMedCount.textContent = `${med} cases`;
-            if (barLowCount) barLowCount.textContent = `${low} cases`;
-
-            const sum = high + med + low;
-            const hPct = sum > 0 ? (high / sum) * 100 : 0;
-            const mPct = sum > 0 ? (med / sum) * 100 : 0;
-            const lPct = sum > 0 ? (low / sum) * 100 : 0;
-
-            if (barHighFill) barHighFill.style.width = `${hPct}%`;
-            if (barMedFill) barMedFill.style.width = `${mPct}%`;
-            if (barLowFill) barLowFill.style.width = `${lPct}%`;
-
-            // Populate Recent Interceptions in Cockpit
-            renderCockpitMiniAlerts(cachedAlerts.slice(0, 6));
-
-        } catch (e) {
-            console.error("Error loading distribution alerts:", e);
-        }
-    }
-
-    function renderCockpitMiniAlerts(alerts) {
-        if (!cockpitMiniAlerts) return;
-        if (alerts.length === 0) {
-            cockpitMiniAlerts.innerHTML = `<div class="mini-alert-item">No recent alerts recorded.</div>`;
-            return;
-        }
-
-        cockpitMiniAlerts.innerHTML = "";
-        alerts.forEach((a) => {
-            const item = document.createElement("div");
-            item.className = "mini-alert-item danger";
-            const prob = (Number(a.fraud_probability || 0) * 100).toFixed(1);
-            const score = Number(a.risk_score || 0).toFixed(1);
-
-            item.innerHTML = `
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span class="mini-alert-tx">${escapeHtml(a.transaction_id)}</span>
-                    <small class="text-muted">${formatTimeOnly(a.created_at)}</small>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span class="mini-alert-prob font-mono">${prob}% Prob</span>
-                    <span class="badge-sev high">Score: ${score}</span>
-                </div>
-            `;
-            cockpitMiniAlerts.appendChild(item);
-        });
-    }
-
-    // ============================================================
-    // Payment Simulator: Scenario Auto-Filling
-    // ============================================================
-    function populateWirePreset(type) {
-        const rand = Math.floor(1000 + Math.random() * 9000);
-        const isoNow = new Date().toISOString().slice(0, 16);
-        document.getElementById("wireTimestamp").value = isoNow;
-
-        if (type === "attack") {
-            document.getElementById("wireTxId").value = `T${rand}`;
-            document.getElementById("wireSender").value = `A41624`;
-            document.getElementById("wireReceiver").value = `B51095`;
-            document.getElementById("wireAmount").value = "8450.00";
-            document.getElementById("wireBalance").value = "9100.00";
-            document.getElementById("wireType").value = "Transfer";
-            document.getElementById("wireLocation").value = "Texas";
-            document.getElementById("wireDeviceId").value = `D616`;
-            document.getElementById("wireIp").value = "185.220.101.5";
-            document.getElementById("toggleDevice").value = "0"; // Unrecognized (0)
-            document.getElementById("toggleThreat").value = "1"; // Threat Flagged (1)
-            document.getElementById("toggleGeoMatch").value = "0"; // Location Mismatch (0)
-            wireDeviation.value = "3.40";
-            wireDeviationBadge.textContent = "3.40x Multiple";
-            wireThreshold.value = "0.42";
-            wireThresholdBadge.textContent = "0.42 (Optimal 98.5% Recall)";
-            showToast("Preset Loaded: High-Deviation Account Drain (Flag = 1)", "error");
-        } else if (type === "anomaly") {
-            document.getElementById("wireTxId").value = `T${rand}`;
-            document.getElementById("wireSender").value = `A23440`;
-            document.getElementById("wireReceiver").value = `B87929`;
-            document.getElementById("wireAmount").value = "1420.00";
-            document.getElementById("wireBalance").value = "4500.00";
-            document.getElementById("wireType").value = "Withdrawal";
-            document.getElementById("wireLocation").value = "California";
-            document.getElementById("wireDeviceId").value = `D226`;
-            document.getElementById("wireIp").value = "77.91.76.247";
-            document.getElementById("toggleDevice").value = "0"; // Unrecognized (0)
-            document.getElementById("toggleThreat").value = "0"; // Clean (0)
-            document.getElementById("toggleGeoMatch").value = "0"; // Mismatch (0)
-            wireDeviation.value = "1.25";
-            wireDeviationBadge.textContent = "1.25x Multiple";
-            wireThreshold.value = "0.42";
-            wireThresholdBadge.textContent = "0.42 (Optimal 98.5% Recall)";
-            showToast("Preset Loaded: Geo-Location Mismatch Anomaly (Flag = 1)", "warning");
-        } else if (type === "clean") {
-            document.getElementById("wireTxId").value = `T${rand}`;
-            document.getElementById("wireSender").value = `A56501`;
-            document.getElementById("wireReceiver").value = `B39190`;
-            document.getElementById("wireAmount").value = "450.00";
-            document.getElementById("wireBalance").value = "12500.00";
-            document.getElementById("wireType").value = "Deposit";
-            document.getElementById("wireLocation").value = "New York";
-            document.getElementById("wireDeviceId").value = `D946`;
-            document.getElementById("wireIp").value = "192.168.1.50";
-            document.getElementById("toggleDevice").value = "1"; // Recognized (1)
-            document.getElementById("toggleThreat").value = "0"; // Clean (0)
-            document.getElementById("toggleGeoMatch").value = "1"; // Match (1)
-            wireDeviation.value = "0.05";
-            wireDeviationBadge.textContent = "0.05x Multiple";
-            wireThreshold.value = "0.42";
-            wireThresholdBadge.textContent = "0.42 (Optimal 98.5% Recall)";
-            showToast("Preset Loaded: Normal Legitimate Transaction (Flag = 0)", "success");
-        }
-    }
-
-    // ============================================================
-    // Payment Simulator: Execution & ML Scoring
-    // ============================================================
-    async function executeWireScoring(event) {
-        if (event) event.preventDefault();
-
-        btnExecuteScoring.disabled = true;
-        btnExecuteScoring.innerHTML = `<span class="banking-spinner" style="width:14px;height:14px;margin:0 8px 0 0;display:inline-block;vertical-align:middle;border-width:2px;"></span> Predicting Suspicious Activity Flag...`;
-
-        const txId = document.getElementById("wireTxId").value.trim();
-        const timestamp = document.getElementById("wireTimestamp").value || new Date().toISOString();
-        const sender = document.getElementById("wireSender").value.trim();
-        const receiver = document.getElementById("wireReceiver").value.trim();
-        const amount = parseFloat(document.getElementById("wireAmount").value) || 0;
-        const balance = parseFloat(document.getElementById("wireBalance").value) || 0;
-        const type = document.getElementById("wireType").value;
-        const location = document.getElementById("wireLocation").value;
-        const deviceId = document.getElementById("wireDeviceId").value.trim() || "D946";
-        const ip = document.getElementById("wireIp").value.trim() || "127.0.0.1";
-        const devRecog = parseInt(document.getElementById("toggleDevice").value, 10);
-        const threatFlag = parseInt(document.getElementById("toggleThreat").value, 10);
-        const geoMatch = parseInt(document.getElementById("toggleGeoMatch").value, 10);
-        const deviation = parseFloat(wireDeviation.value) || 0.0;
-        const threshold = parseFloat(wireThreshold.value) || 0.42;
-
-        const payload = {
-            transaction_id: txId,
-            timestamp: new Date(timestamp).toISOString(),
-            sender_account_id: sender,
-            receiver_account_id: receiver,
-            amount: amount,
-            type: type,
-            device_id: deviceId,
-            ip_address: ip,
-            location: location,
-            account_balance: balance,
-            user_device_recognition: devRecog,
-            known_threat_flag: threatFlag,
-            login_location_match: geoMatch,
-            spending_pattern_deviation: deviation,
-        };
-
-        try {
-            const result = await window.FraudAPI.predictTransaction(payload, threshold);
-
-            // Display Results in HUD
-            hudEmptyState.classList.add("hidden");
-            hudLiveScored.classList.remove("hidden");
-            hudTimestamp.textContent = `SCORED AT ${new Date().toLocaleTimeString()}`;
-
-            const riskScore = Number(result.risk_score || 0);
-            const fraudProb = Number(result.fraud_probability || 0);
-            const isSuspicious = String(result.prediction).toLowerCase() === "suspicious" || String(result.prediction).toLowerCase() === "fraud";
-
-            // Dynamic Semicircular Speedometer Arc Math (Radius = 95, Circumference = π * 95 ≈ 298.45)
-            const circumference = 298.45;
-            const clampedScore = Math.max(0, Math.min(100, riskScore));
-            const targetOffset = circumference - (clampedScore / 100) * circumference;
-
-            // Apply stroke dashoffset to both CSS style & SVG attribute for rock-solid cross-browser rendering
-            hudGaugeFill.style.strokeDashoffset = `${targetOffset}px`;
-            hudGaugeFill.setAttribute("stroke-dashoffset", targetOffset);
-            hudRiskScore.textContent = clampedScore.toFixed(1);
-
-            // Compute Needle Tip Indicator Position along arc: theta from π (0% risk, left) to 0 (100% risk, right)
-            const angleRad = Math.PI * (1 - clampedScore / 100);
-            const dotX = (120 + 95 * Math.cos(angleRad)).toFixed(2);
-            const dotY = (115 - 95 * Math.sin(angleRad)).toFixed(2);
-            if (hudGaugeNeedleDot) {
-                hudGaugeNeedleDot.setAttribute("cx", dotX);
-                hudGaugeNeedleDot.setAttribute("cy", dotY);
-            }
-
-            hudGaugeFill.classList.remove("gauge-fraud", "gauge-clean", "gauge-warn");
-            hudRiskScore.classList.remove("score-fraud", "score-clean");
-
-            if (isSuspicious) {
-                hudGaugeFill.classList.add("gauge-fraud");
-                hudGaugeFill.style.stroke = "url(#gaugeGradientFraud)";
-                hudGaugeFill.setAttribute("stroke", "url(#gaugeGradientFraud)");
-                hudGaugeFill.style.filter = "drop-shadow(0 0 12px rgba(239, 68, 68, 0.85))";
-
-                if (hudGaugeNeedleDot) {
-                    hudGaugeNeedleDot.setAttribute("stroke", "#ef4444");
-                    hudGaugeNeedleDot.style.filter = "drop-shadow(0 0 8px rgba(239, 68, 68, 0.95))";
-                }
-
-                hudRiskScore.classList.add("score-fraud");
-                hudRiskScore.style.color = "#ef4444";
-                hudRiskScore.style.textShadow = "0 0 18px rgba(239, 68, 68, 0.65)";
-
-                hudVerdictBanner.className = "hud-verdict-banner verdict-fraud";
-                hudVerdictIcon.textContent = "🚨";
-                hudVerdictText.textContent = "SUSPICIOUS (FLAG = 1) — FRAUD DETECTED";
-                hudProbVal.className = "hud-t-value font-mono text-danger";
-                hudTierVal.className = "hud-t-value text-danger";
-                hudTierVal.textContent = "SUSPICIOUS (1)";
-                hudDbSyncVal.textContent = "AUTO-STORED IN POSTGRESQL";
-                hudDbSyncVal.className = "hud-t-value text-green";
-
-                playBeep("alert");
-                showToast(`🚨 SUSPICIOUS TRANSACTION INTERCEPTED! Fraud Probability: ${(fraudProb * 100).toFixed(1)}%`, "error");
-            } else {
-                hudGaugeFill.classList.add("gauge-clean");
-                hudGaugeFill.style.stroke = "url(#gaugeGradientClean)";
-                hudGaugeFill.setAttribute("stroke", "url(#gaugeGradientClean)");
-                hudGaugeFill.style.filter = "drop-shadow(0 0 12px rgba(16, 185, 129, 0.85))";
-
-                if (hudGaugeNeedleDot) {
-                    hudGaugeNeedleDot.setAttribute("stroke", "#10b981");
-                    hudGaugeNeedleDot.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.95))";
-                }
-
-                hudRiskScore.classList.add("score-clean");
-                hudRiskScore.style.color = "#10b981";
-                hudRiskScore.style.textShadow = "0 0 18px rgba(16, 185, 129, 0.65)";
-
-                hudVerdictBanner.className = "hud-verdict-banner verdict-clean";
-                hudVerdictIcon.textContent = "✅";
-                hudVerdictText.textContent = "LEGITIMATE (FLAG = 0) — NORMAL TRANSACTION";
-                hudProbVal.className = "hud-t-value font-mono text-green";
-                hudTierVal.className = "hud-t-value text-green";
-                hudTierVal.textContent = "NORMAL (0)";
-                hudDbSyncVal.textContent = "CLEARED (NORMAL)";
-                hudDbSyncVal.className = "hud-t-value text-muted";
-
-                playBeep("clean");
-                showToast(`✅ Transaction Cleared (Flag = 0). Normal risk score: ${riskScore.toFixed(1)}`, "success");
-            }
-
-            hudProbVal.textContent = `${(fraudProb * 100).toFixed(2)}%`;
-            hudCutoffVal.textContent = `T = ${Number(result.decision_threshold || threshold).toFixed(2)}`;
-
-            // Populate XAI Bullet Reasons
-            renderHudXaiSignals(payload, isSuspicious, riskScore);
-
-            // Trigger 3D Satellite Global Interception Laser Strike
-            if (window.SatelliteDefense && typeof window.SatelliteDefense.triggerInterception === "function") {
-                window.SatelliteDefense.triggerInterception({
-                    transaction_id: payload.transaction_id,
-                    location: payload.location,
-                    amount: payload.amount,
-                    risk_score: riskScore,
-                    fraud_probability: fraudProb,
-                    prediction: result.prediction,
-                    risk_level: result.risk_level,
-                    is_fraud: isSuspicious,
-                    threat_flag: payload.known_threat_flag,
-                    device_id: payload.device_id,
-                    ip_address: payload.ip_address
-                });
-            }
-
-            // Background reload cockpit counters and docket cases
-            await loadAlertSummaryData();
-            await loadTriageCases();
-
-        } catch (error) {
-            showToast(`Scoring Error: ${error.message}`, "error");
-        } finally {
-            btnExecuteScoring.disabled = false;
-            btnExecuteScoring.innerHTML = `<span class="btn-icon">⚡</span> Predict Suspicious Activity Flag`;
-        }
-    }
-
-    // ============================================================
-    // Explainable AI (XAI) Signals Generator
-    // ============================================================
-    function renderHudXaiSignals(tx, isSuspicious, score) {
-        hudXaiList.innerHTML = "";
-        const signals = [];
-
-        if (tx.known_threat_flag === 1) {
-            signals.push({
-                badge: "CRITICAL",
-                type: "crit",
-                text: "Originating IP or account matched on active AML / international cybercrime blacklist (+40% risk)."
-            });
-        }
-
-        if (tx.user_device_recognition === 0) {
-            signals.push({
-                badge: "HARDWARE",
-                type: "crit",
-                text: "Unrecognized hardware fingerprint: First-time terminal used for wire transfer (+28% risk)."
-            });
-        }
-
-        if (tx.login_location_match === 0) {
-            signals.push({
-                badge: "GEO ANOMALY",
-                type: "warn",
-                text: `Login session originated from ${tx.location}, conflicting with verified home jurisdiction.`
-            });
-        }
-
-        if (tx.account_balance > 0) {
-            const drainRatio = (tx.amount / tx.account_balance) * 100;
-            if (drainRatio >= 75) {
-                signals.push({
-                    badge: "CAPITAL DRAIN",
-                    type: "crit",
-                    text: `Rapid capital exhaustion: Wire of $${tx.amount.toLocaleString()} demands ${drainRatio.toFixed(1)}% of total account funds.`
-                });
-            }
-        }
-
-        if (tx.spending_pattern_deviation >= 2.0) {
-            signals.push({
-                badge: "VELOCITY SPIKE",
-                type: "warn",
-                text: `Behavioral velocity is ${tx.spending_pattern_deviation.toFixed(2)}x standard deviations above historical mean volume.`
-            });
-        } else if (tx.spending_pattern_deviation >= 1.0) {
-            signals.push({
-                badge: "VELOCITY",
-                type: "warn",
-                text: `Elevated transaction deviation: ${tx.spending_pattern_deviation.toFixed(2)}x above regular activity.`
-            });
-        }
-
-        if (signals.length === 0) {
-            signals.push({
-                badge: "VERIFIED",
-                type: "safe",
-                text: "All credentials, hardware fingerprints, behavioral velocities, and geo-locations verified within legitimate tolerances."
-            });
-        }
-
-        signals.forEach((s) => {
-            const li = document.createElement("li");
-            li.className = "xai-bullet";
-            li.innerHTML = `
-                <span class="xai-bullet-badge ${s.type}">${s.badge}</span>
-                <span>${escapeHtml(s.text)}</span>
-            `;
-            hudXaiList.appendChild(li);
-        });
-    }
-
-    // ============================================================
-    // Live Wire Stream (Real-Time Background Auto-Scorer)
-    // ============================================================
-    function toggleLiveFeed() {
-        if (liveFeedRunning) {
-            stopLiveFeed();
-        } else {
-            startLiveFeed();
-        }
-    }
-
-    function startLiveFeed() {
-        liveFeedRunning = true;
-        liveFeedIcon.textContent = "⏸";
-        liveFeedText.textContent = "Pause Auto Ingestion";
-        btnToggleLiveFeed.className = "btn btn-outline-danger";
-        showToast("Live Wire Ingestion active: Streaming incoming interbank payments...", "success");
-
-        // Clear empty row if present
-        const emptyRow = streamTableBody.querySelector(".stream-empty-row");
-        if (emptyRow) emptyRow.remove();
-
-        // Ingest immediately, then every 2.8 seconds
-        ingestStreamTransaction();
-        liveFeedInterval = setInterval(ingestStreamTransaction, 2800);
-    }
-
-    function stopLiveFeed() {
-        liveFeedRunning = false;
-        clearInterval(liveFeedInterval);
-        liveFeedInterval = null;
-        liveFeedIcon.textContent = "▶";
-        liveFeedText.textContent = "Start Auto Ingestion";
-        btnToggleLiveFeed.className = "btn btn-primary";
-        showToast("Live Wire Ingestion paused.", "warning");
-    }
-
-    async function ingestStreamTransaction() {
-        const rand = Math.floor(1000 + Math.random() * 9000);
-        const isFraudProfile = Math.random() < 0.35; // 35% chance to simulate a fraud attack
-
-        const locations = ["California", "New York", "Texas", "Florida"];
-        const loc = locations[Math.floor(Math.random() * locations.length)];
-
-        let amount, balance, devRecog, threatFlag, geoMatch, deviation;
-
-        if (isFraudProfile) {
-            amount = Math.floor(3500 + Math.random() * 6000);
-            balance = amount + Math.floor(200 + Math.random() * 800);
-            devRecog = 0;
-            threatFlag = Math.random() < 0.6 ? 1 : 0;
-            geoMatch = 0;
-            deviation = parseFloat((2.0 + Math.random() * 2.5).toFixed(2));
-        } else {
-            amount = Math.floor(50 + Math.random() * 800);
-            balance = Math.floor(8000 + Math.random() * 25000);
-            devRecog = 1;
-            threatFlag = 0;
-            geoMatch = 1;
-            deviation = parseFloat((0.05 + Math.random() * 0.4).toFixed(2));
-        }
-
-        const payload = {
-            transaction_id: `TX-WIRE-${rand}`,
-            timestamp: new Date().toISOString(),
-            sender_account_id: `US-DEBTOR-${rand}`,
-            receiver_account_id: `BENEFICIARY-${Math.floor(1000 + Math.random() * 9000)}`,
-            amount: amount,
-            type: "Transfer",
-            device_id: `DEV-STREAM-${rand}`,
-            ip_address: `198.51.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-            location: loc,
-            account_balance: balance,
-            user_device_recognition: devRecog,
-            known_threat_flag: threatFlag,
-            login_location_match: geoMatch,
-            spending_pattern_deviation: deviation,
-        };
-
-        try {
-            const res = await window.FraudAPI.predictTransaction(payload, 0.42);
-            liveStreamTotal++;
-
-            const isSuspicious = String(res.prediction).toLowerCase() === "suspicious";
-            if (isSuspicious) {
-                liveStreamFrauds++;
-                liveStreamSavedCapital += amount;
-                playBeep("alert");
-            } else {
-                liveStreamClean++;
-            }
-
-            // Update Statistics Ribbon
-            if (streamCount) streamCount.textContent = liveStreamTotal;
-            if (streamFraudCount) streamFraudCount.textContent = liveStreamFrauds;
-            if (streamCleanCount) streamCleanCount.textContent = liveStreamClean;
-            if (streamSavedCapital) streamSavedCapital.textContent = `$${liveStreamSavedCapital.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-
-            // Prepend Row to Stream Table
-            const row = document.createElement("tr");
-            const prob = (Number(res.fraud_probability || 0) * 100).toFixed(1);
-
-            row.innerHTML = `
-                <td><code>${new Date().toLocaleTimeString()}</code></td>
-                <td><strong>${escapeHtml(res.transaction_id)}</strong></td>
-                <td><small class="font-mono">${escapeHtml(payload.sender_account_id)} &rarr; ${escapeHtml(payload.receiver_account_id)}</small></td>
-                <td><strong>$${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></td>
-                <td>${escapeHtml(loc)}</td>
-                <td>${threatFlag === 1 ? '<span class="badge-sev high">BLACKLIST</span>' : '<span class="text-muted">Clean</span>'}</td>
-                <td><strong class="font-mono ${isSuspicious ? 'text-danger' : 'text-green'}">${prob}%</strong></td>
-                <td>
-                    <span class="status-pill-badge ${isSuspicious ? 'status-new' : 'status-resolved'}">
-                        ${isSuspicious ? '🚨 INTERCEPTED' : '✅ APPROVED'}
-                    </span>
-                </td>
-            `;
-
-            streamTableBody.insertBefore(row, streamTableBody.firstChild);
-
-            // Trigger 3D Satellite Global Interception Laser Strike
-            if (window.SatelliteDefense && typeof window.SatelliteDefense.triggerInterception === "function") {
-                window.SatelliteDefense.triggerInterception({
-                    transaction_id: payload.transaction_id,
-                    location: payload.location,
-                    amount: payload.amount,
-                    risk_score: res.risk_score !== undefined ? res.risk_score : (isSuspicious ? 98.4 : 8.2),
-                    fraud_probability: res.fraud_probability,
-                    prediction: res.prediction,
-                    risk_level: res.risk_level || (isSuspicious ? "high" : "low"),
-                    is_fraud: isSuspicious,
-                    threat_flag: threatFlag,
-                    device_id: payload.device_id,
-                    ip_address: payload.ip_address
-                });
-            }
-
-            // Cap stream table at 25 rows for memory stability
-            if (streamTableBody.children.length > 25) {
-                streamTableBody.removeChild(streamTableBody.lastChild);
-            }
-
-            // Refresh summary counters
-            loadAlertSummaryData();
-
-        } catch (err) {
-            console.error("Stream ingestion error:", err);
-        }
-    }
-
-    function clearLiveFeed() {
-        streamTableBody.innerHTML = `
-            <tr class="stream-empty-row">
-                <td colspan="8">Stream cleared. Waiting for transactions...</td>
-            </tr>
-        `;
-        liveStreamTotal = 0;
-        liveStreamFrauds = 0;
-        liveStreamClean = 0;
-        liveStreamSavedCapital = 0;
-
-        if (streamCount) streamCount.textContent = "0";
-        if (streamFraudCount) streamFraudCount.textContent = "0";
-        if (streamCleanCount) streamCleanCount.textContent = "0";
-        if (streamSavedCapital) streamSavedCapital.textContent = "$0.00";
-    }
-
-    // ============================================================
-    // Batch Liquidity Settlement: 197 Certified Fraud Batch
-    // ============================================================
-    async function handleExecute197Batch() {
-        btnExecute197Batch.disabled = true;
-        batchLoadingIndicator.classList.remove("hidden");
-        batchResultsHub.classList.add("hidden");
-
-        const t0 = performance.now();
-
-        try {
-            const data = await window.FraudAPI.getSample197Batch();
-            const txs = data.transactions || [];
-
-            if (txs.length === 0) {
-                throw new Error("Unable to locate 197 batch transactions file.");
-            }
-
-            const res = await window.FraudAPI.predictBatch(txs, 0.42);
-            const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
-
-            batchLatencyBadge.textContent = `Completed in ${elapsed}s (Latency: ${(elapsed / txs.length * 1000).toFixed(1)}ms/tx)`;
-            bmTotal.textContent = res.summary.total_transactions;
-            bmSuspicious.textContent = res.summary.suspicious_count;
-            bmNormal.textContent = res.summary.normal_count;
-            bmRate.textContent = `${res.summary.fraud_rate_percentage.toFixed(1)}%`;
-            bmAvgRisk.textContent = `${res.summary.average_risk_score.toFixed(1)} / 100`;
-
-            // Populate Preview Table
-            batchPreviewTableBody.innerHTML = "";
-            (res.predictions || []).slice(0, 15).forEach((p) => {
-                const tr = document.createElement("tr");
-                const prob = (Number(p.fraud_probability || 0) * 100).toFixed(2);
-                const sev = String(p.risk_level || "high").toLowerCase();
-
-                tr.innerHTML = `
-                    <td><strong>${escapeHtml(p.transaction_id)}</strong></td>
-                    <td><span class="status-pill-badge status-new">${escapeHtml(p.prediction)}</span></td>
-                    <td><span class="font-mono font-bold text-danger">${prob}%</span></td>
-                    <td><strong class="font-mono">${Number(p.risk_score).toFixed(1)}</strong></td>
-                    <td><span class="badge-sev ${sev}">${escapeHtml(p.risk_level)}</span></td>
-                `;
-                batchPreviewTableBody.appendChild(tr);
-            });
-
-            batchResultsHub.classList.remove("hidden");
-            playBeep("alert");
-            showToast(`Batch Settlement Complete: All ${res.summary.suspicious_count} frauds intercepted and synchronized to PostgreSQL!`, "success");
-
-            // Refresh Cockpit & Case Desk
-            await loadCockpitData();
-            await loadTriageCases();
-
-        } catch (error) {
-            showToast(`Batch execution failed: ${error.message}`, "error");
-        } finally {
-            batchLoadingIndicator.classList.add("hidden");
-            btnExecute197Batch.disabled = false;
-        }
-    }
-
-    // Custom Batch File Upload
-    function handleCustomBatchFile(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        batchCustomFileLabel.textContent = file.name;
-        const reader = new FileReader();
-
-        reader.onload = async function (e) {
-            try {
-                const json = JSON.parse(e.target.result);
-                const txs = Array.isArray(json) ? json : json.transactions;
-
-                if (!Array.isArray(txs) || txs.length === 0) {
-                    throw new Error("Uploaded JSON must contain an array under 'transactions'.");
-                }
-
-                btnExecute197Batch.disabled = true;
-                batchLoadingIndicator.classList.remove("hidden");
-                batchResultsHub.classList.add("hidden");
-
-                const t0 = performance.now();
-                const res = await window.FraudAPI.predictBatch(txs, 0.42);
-                const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
-
-                batchLatencyBadge.textContent = `Completed in ${elapsed}s`;
-                bmTotal.textContent = res.summary.total_transactions;
-                bmSuspicious.textContent = res.summary.suspicious_count;
-                bmNormal.textContent = res.summary.normal_count;
-                bmRate.textContent = `${res.summary.fraud_rate_percentage.toFixed(1)}%`;
-                bmAvgRisk.textContent = `${res.summary.average_risk_score.toFixed(1)} / 100`;
-
-                batchPreviewTableBody.innerHTML = "";
-                (res.predictions || []).slice(0, 15).forEach((p) => {
-                    const tr = document.createElement("tr");
-                    const prob = (Number(p.fraud_probability || 0) * 100).toFixed(2);
-                    const sev = String(p.risk_level || "high").toLowerCase();
-                    tr.innerHTML = `
-                        <td><strong>${escapeHtml(p.transaction_id)}</strong></td>
-                        <td><span class="status-pill-badge status-new">${escapeHtml(p.prediction)}</span></td>
-                        <td><span class="font-mono font-bold text-danger">${prob}%</span></td>
-                        <td><strong class="font-mono">${Number(p.risk_score).toFixed(1)}</strong></td>
-                        <td><span class="badge-sev ${sev}">${escapeHtml(p.risk_level)}</span></td>
-                    `;
-                    batchPreviewTableBody.appendChild(tr);
-                });
-
-                batchResultsHub.classList.remove("hidden");
-                showToast(`Custom clearing file processed: ${res.summary.suspicious_count} transactions intercepted.`, "success");
-
-                await loadCockpitData();
-                await loadTriageCases();
-
-            } catch (err) {
-                showToast(`File error: ${err.message}`, "error");
-            } finally {
-                batchLoadingIndicator.classList.add("hidden");
-                btnExecute197Batch.disabled = false;
-            }
-        };
-
-        reader.readAsText(file);
-    }
-
-    // ============================================================
-    // Fraud Case Investigation (Triage Desk)
-    // ============================================================
-    async function loadTriageCases() {
-        if (!triageTableBody) return;
-        triageLoadingMsg.classList.remove("hidden");
-        triageErrorMsg.textContent = "";
-
-        try {
-            const statusVal = triageStatusFilter ? triageStatusFilter.value : "";
-            const response = await window.FraudAPI.getAlerts(statusVal);
-            cachedAlerts = Array.isArray(response?.alerts) ? response.alerts : [];
-            renderTriageTable();
-        } catch (e) {
-            triageErrorMsg.textContent = e.message || "Failed to load database cases.";
-            triageTableBody.innerHTML = `<tr><td colspan="9" class="empty-state">Unable to communicate with PostgreSQL alerts database.</td></tr>`;
-        } finally {
-            triageLoadingMsg.classList.add("hidden");
-        }
-    }
-
-    function renderTriageTable() {
-        const riskVal = triageRiskFilter ? triageRiskFilter.value.toLowerCase() : "";
-        const searchVal = triageSearchInput ? triageSearchInput.value.trim().toLowerCase() : "";
-
-        const filtered = cachedAlerts.filter((a) => {
-            const matchRisk = !riskVal || String(a.risk_level || "").toLowerCase() === riskVal;
-            const matchSearch = !searchVal || String(a.transaction_id || "").toLowerCase().includes(searchVal);
-            return matchRisk && matchSearch;
-        });
-
-        if (triageCountLabel) {
-            triageCountLabel.textContent = `Displaying ${filtered.length} of ${cachedAlerts.length} recorded fraud cases`;
-        }
-
-        triageTableBody.innerHTML = "";
-
-        if (filtered.length === 0) {
-            triageTableBody.innerHTML = `<tr><td colspan="9" class="empty-state">No matching fraud cases found in PostgreSQL audit log.</td></tr>`;
-            return;
-        }
-
-        filtered.forEach((a) => {
-            const tr = document.createElement("tr");
-            const prob = (Number(a.fraud_probability || 0) * 100).toFixed(2);
-            const score = Number(a.risk_score || 0).toFixed(1);
-            const sevClass = String(a.risk_level || "high").toLowerCase();
-            const statusClass = String(a.status || "new").toLowerCase().replace(/\s+/g, "-");
-
-            tr.innerHTML = `
-                <td><code>#${escapeHtml(a.id)}</code></td>
-                <td><strong class="font-mono">${escapeHtml(a.transaction_id)}</strong></td>
-                <td><strong class="font-mono text-danger">${prob}%</strong></td>
-                <td><span class="status-pill-badge status-new">${escapeHtml(a.prediction || "Suspicious")}</span></td>
-                <td><strong class="font-mono">${score}</strong></td>
-                <td><span class="badge-sev ${sevClass}">${escapeHtml(a.risk_level || "High")}</span></td>
-                <td><span class="status-pill-badge status-${statusClass}">${escapeHtml(a.status || "New")}</span></td>
-                <td><small>${formatDateTime(a.created_at)}</small></td>
-                <td class="triage-actions">
-                    <button type="button" class="btn-triage-act act-review" onclick="window.BankingTerminal.updateCaseStatus(${a.id}, 'Under Review')" title="Assign Case to Investigator">🔍 Review</button>
-                    <button type="button" class="btn-triage-act act-resolve" onclick="window.BankingTerminal.updateCaseStatus(${a.id}, 'Resolved')" title="Authorize & Close Case">✅ Settle</button>
-                    <button type="button" class="btn-triage-act act-del" onclick="window.BankingTerminal.deleteCase(${a.id})" title="Purge Record">🗑️</button>
-                </td>
-            `;
-
-            triageTableBody.appendChild(tr);
-        });
-    }
-
-    async function updateCaseStatus(id, newStatus) {
-        try {
-            await window.FraudAPI.updateAlertStatus(id, newStatus);
-            showToast(`Case #${id} status changed to '${newStatus}'.`, "success");
-            await loadAlertSummaryData();
-            await loadTriageCases();
-        } catch (e) {
-            showToast(`Update failed: ${e.message}`, "error");
-        }
-    }
-
-    async function deleteCase(id) {
-        if (!confirm(`Confirm permanent deletion of Fraud Case #${id} from PostgreSQL?`)) return;
-        try {
-            await window.FraudAPI.deleteAlert(id);
-            showToast(`Case #${id} removed from database.`, "success");
-            await loadAlertSummaryData();
-            await loadTriageCases();
-        } catch (e) {
-            showToast(`Deletion error: ${e.message}`, "error");
-        }
-    }
-
-    function exportTriageCsv() {
-        if (!cachedAlerts || cachedAlerts.length === 0) {
-            showToast("No cases available for export.", "error");
-            return;
-        }
-
-        const headers = ["Case_ID", "Transaction_Ref", "Fraud_Probability", "Prediction", "Risk_Score", "Severity_Level", "Status", "Timestamp_Created"];
-        const rows = cachedAlerts.map(a => [
-            a.id,
-            `"${a.transaction_id}"`,
-            a.fraud_probability,
-            `"${a.prediction}"`,
-            a.risk_score,
-            `"${a.risk_level}"`,
-            `"${a.status}"`,
-            `"${a.created_at}"`
-        ]);
-
-        const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `apex_fraud_audit_log_${Date.now()}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        showToast("Audit Log CSV successfully exported.", "success");
-    }
-
-    // ============================================================
-    // Formatters & Escapers
-    // ============================================================
-    function formatDateTime(val) {
-        if (!val) return "--";
-        const d = new Date(val);
-        if (Number.isNaN(d.getTime())) return String(val);
-        return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-
-    function formatTimeOnly(val) {
-        if (!val) return "--:--";
-        const d = new Date(val);
-        if (Number.isNaN(d.getTime())) return String(val);
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-
-    function escapeHtml(val) {
-        if (val === null || val === undefined) return "";
-        return String(val)
+    function escapeHTML(value) {
+        return String(value ?? "")
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
@@ -1408,183 +71,2837 @@
             .replace(/'/g, "&#039;");
     }
 
-    // ============================================================
-    // Register Listeners
-    // ============================================================
-    function registerTerminalListeners() {
-        // Navigation Tabs
-        document.querySelectorAll(".bank-nav-tab").forEach((tab) => {
-            tab.addEventListener("click", () => {
-                switchTab(tab.getAttribute("data-tab"));
-            });
+    function toNumber(value, fallback = 0) {
+        const number = Number(value);
+
+        return Number.isFinite(number)
+            ? number
+            : fallback;
+    }
+
+    function formatNumber(value) {
+        return toNumber(value).toLocaleString("en-US");
+    }
+
+    function formatMoney(value) {
+        return toNumber(value).toLocaleString("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 2
         });
+    }
 
-        // Authentication
-        if (bankingAuthForm) bankingAuthForm.addEventListener("submit", handleAuthLogin);
-        if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
-        if (systemRefreshBtn) systemRefreshBtn.addEventListener("click", () => {
-            loadCockpitData();
-            showToast("System telemetry synchronized with PostgreSQL.", "success");
+    function normalizeProbability(value) {
+        const probability = Number(value);
+
+        if (!Number.isFinite(probability)) {
+            return null;
+        }
+
+        // Support both fractional probabilities and percentages.
+        const normalized = probability > 1
+            ? probability / 100
+            : probability;
+
+        return Math.min(1, Math.max(0, normalized));
+    }
+
+    function formatProbability(value) {
+        const probability = normalizeProbability(value);
+
+        if (probability === null) {
+            return "—";
+        }
+
+        return `${(probability * 100).toFixed(2)}%`;
+    }
+
+    function formatTimestamp(value) {
+        if (!value) {
+            return "—";
+        }
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return String(value);
+        }
+
+        return date.toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
         });
+    }
 
-        // Sound Toggle
-        if (soundToggleBtn) {
-            soundToggleBtn.addEventListener("click", () => {
-                soundEnabled = !soundEnabled;
-                soundIcon.textContent = soundEnabled ? "🔊" : "🔇";
-                showToast(`Audio alerts ${soundEnabled ? "enabled" : "muted"}.`, "success");
-            });
+    function getFirstValue(object, keys, fallback = undefined) {
+        if (!object || typeof object !== "object") {
+            return fallback;
         }
 
-        // Quick Role Login Buttons
-        if (btnAdminQuickLogin) {
-            btnAdminQuickLogin.addEventListener("click", () => {
-                authUsername.value = "admin";
-                authPassword.value = "admin123";
-                handleAuthLogin();
-            });
-        }
-        if (btnAnalystQuickLogin) {
-            btnAnalystQuickLogin.addEventListener("click", () => {
-                authUsername.value = "analyst";
-                authPassword.value = "analyst123";
-                handleAuthLogin();
-            });
+        for (const key of keys) {
+            if (
+                object[key] !== undefined &&
+                object[key] !== null
+            ) {
+                return object[key];
+            }
         }
 
-        // Presets
-        if (btnPresetAttack) btnPresetAttack.addEventListener("click", () => populateWirePreset("attack"));
-        if (btnPresetAnomaly) btnPresetAnomaly.addEventListener("click", () => populateWirePreset("anomaly"));
-        if (btnPresetClean) btnPresetClean.addEventListener("click", () => populateWirePreset("clean"));
+        return fallback;
+    }
 
-        // New Transaction ID Generator
-        if (btnGenNewWireId) {
-            btnGenNewWireId.addEventListener("click", () => {
-                const rand = Math.floor(1000 + Math.random() * 9000);
-                document.getElementById("wireTxId").value = `T${rand}`;
-            });
+
+    // ========================================================
+    // 3. MESSAGES
+    // ========================================================
+
+    function showMessage(message, type = "info") {
+        const element = getElement("dashboardMessage");
+
+        if (!element) {
+            return;
         }
 
-        // Sliders
-        if (wireDeviation) {
-            wireDeviation.addEventListener("input", (e) => {
-                wireDeviationBadge.textContent = `${parseFloat(e.target.value).toFixed(2)}x Multiple`;
-            });
-        }
-        if (wireThreshold) {
-            wireThreshold.addEventListener("input", (e) => {
-                wireThresholdBadge.textContent = `${parseFloat(e.target.value).toFixed(2)} Cutoff`;
-            });
+        element.textContent = message;
+        element.className = `dashboard-message ${type}`;
+
+        element.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest"
+        });
+    }
+
+    function clearMessage() {
+        const element = getElement("dashboardMessage");
+
+        if (!element) {
+            return;
         }
 
-        // Payment Scoring Form
-        if (wireTransferForm) wireTransferForm.addEventListener("submit", executeWireScoring);
+        element.textContent = "";
+        element.className = "dashboard-message";
+    }
 
-        const btnExecuteMoviePrediction = document.getElementById("btnExecuteMoviePrediction");
-        if (btnExecuteMoviePrediction) {
-            btnExecuteMoviePrediction.addEventListener("click", async () => {
-                // Trigger live wire payment scoring & prediction
-                await executeWireScoring();
-                // Smoothly focus on Step 9 3D Orbital Theater to watch the full cinematic movie!
-                if (window.BankingTerminal && typeof window.BankingTerminal.switchTab === "function") {
-                    window.BankingTerminal.switchTab("cockpit");
+
+    // ========================================================
+    // 4. AUTHENTICATION
+    // ========================================================
+
+    function requireAuthentication() {
+        if (!API || !API.isAuthenticated()) {
+            window.location.replace(
+                "login.html?next=dashboard.html"
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    function initializeUserInformation() {
+        const role = API.getUserRole() || "Authenticated User";
+
+        setText("userName", "Authenticated User");
+        setText("userRole", role);
+
+        const initials = role
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((word) => word[0].toUpperCase())
+            .join("");
+
+        setText(
+            "userInitials",
+            initials || "U"
+        );
+    }
+
+    function handleLogout() {
+        const confirmed = window.confirm(
+            "Are you sure you want to sign out?"
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        API.logout();
+
+        window.location.replace("login.html");
+    }
+
+
+    // ========================================================
+    // 5. NAVIGATION
+    // ========================================================
+
+    function closeMobileSidebar() {
+        getElement("dashboardSidebar")
+            ?.classList.remove("is-open");
+
+        getElement("sidebarOverlay")
+            ?.classList.remove("is-visible");
+
+        const toggle = getElement("sidebarToggle");
+
+        if (toggle) {
+            toggle.setAttribute("aria-expanded", "false");
+        }
+    }
+
+    function toggleMobileSidebar() {
+        const sidebar = getElement("dashboardSidebar");
+        const overlay = getElement("sidebarOverlay");
+        const toggle = getElement("sidebarToggle");
+
+        if (!sidebar || !overlay) {
+            return;
+        }
+
+        const isOpening = !sidebar.classList.contains("is-open");
+
+        sidebar.classList.toggle("is-open", isOpening);
+        overlay.classList.toggle("is-visible", isOpening);
+
+        if (toggle) {
+            toggle.setAttribute(
+                "aria-expanded",
+                String(isOpening)
+            );
+        }
+    }
+
+    function navigateTo(viewName) {
+        if (!VIEW_NAMES[viewName]) {
+            return;
+        }
+
+        state.currentView = viewName;
+
+        // Switch visible sections.
+        document.querySelectorAll("[data-view-panel]").forEach(
+            (panel) => {
+                const isActive =
+                    panel.dataset.viewPanel === viewName;
+
+                panel.hidden = !isActive;
+                panel.classList.toggle("active", isActive);
+            }
+        );
+
+        // Update the sidebar selection.
+        document.querySelectorAll("[data-nav]").forEach(
+            (button) => {
+                const isActive =
+                    button.dataset.nav === viewName;
+
+                button.classList.toggle("active", isActive);
+
+                if (isActive) {
+                    button.setAttribute("aria-current", "page");
+                } else {
+                    button.removeAttribute("aria-current");
                 }
-                setTimeout(() => {
-                    const theater = document.getElementById("satelliteTheaterContainer");
-                    if (theater) {
-                        theater.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }
-                }, 200);
-            });
+            }
+        );
+
+        setText(
+            "breadcrumbCurrent",
+            VIEW_NAMES[viewName]
+        );
+
+        closeMobileSidebar();
+        clearMessage();
+
+        // Load relevant data when opening a section.
+        if (viewName === "alerts") {
+            loadAlerts();
         }
 
-        // Live Feed Controls
-        if (btnToggleLiveFeed) btnToggleLiveFeed.addEventListener("click", toggleLiveFeed);
-        if (btnClearLiveFeed) btnClearLiveFeed.addEventListener("click", clearLiveFeed);
+        if (viewName === "monitoring") {
+            loadMonitoring();
+        }
 
-        // Batch Controls
-        if (btnExecute197Batch) btnExecute197Batch.addEventListener("click", handleExecute197Batch);
-        if (batchCustomFileInput) batchCustomFileInput.addEventListener("change", handleCustomBatchFile);
+        if (viewName === "overview") {
+            loadDashboardData();
+        }
 
-        // Triage Controls
-        if (triageStatusFilter) triageStatusFilter.addEventListener("change", loadTriageCases);
-        if (triageRiskFilter) triageRiskFilter.addEventListener("change", renderTriageTable);
-        if (triageSearchInput) triageSearchInput.addEventListener("input", renderTriageTable);
-        if (btnReloadTriage) btnReloadTriage.addEventListener("click", () => {
-            loadTriageCases();
-            showToast("Cases reloaded from PostgreSQL.", "success");
+        if (viewName === "analytics") {
+            renderAnalyticsGraphs();
+        }
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
         });
-        if (btnExportTriageCsv) btnExportTriageCsv.addEventListener("click", exportTriageCsv);
-
-        // Guide Explainer Modal
-        const btnOpenGuideModal = document.getElementById("btnOpenGuideModal");
-        const btnCloseGuideModal = document.getElementById("btnCloseGuideModal");
-        const guideExplainerModal = document.getElementById("guideExplainerModal");
-
-        if (btnOpenGuideModal && guideExplainerModal) {
-            btnOpenGuideModal.addEventListener("click", () => {
-                guideExplainerModal.classList.remove("hidden");
-            });
-        }
-        if (btnCloseGuideModal && guideExplainerModal) {
-            btnCloseGuideModal.addEventListener("click", () => {
-                guideExplainerModal.classList.add("hidden");
-            });
-        }
-
-        // Color Theme Palette Switcher
-        const themeSelector = document.getElementById("themeSelector");
-        const savedTheme = localStorage.getItem("bankingTheme") || "gold";
-        document.body.setAttribute("data-theme", savedTheme);
-        if (themeSelector) {
-            themeSelector.value = savedTheme;
-            themeSelector.addEventListener("change", (e) => {
-                const newTheme = e.target.value;
-                document.body.setAttribute("data-theme", newTheme);
-                localStorage.setItem("bankingTheme", newTheme);
-                const themeNames = {
-                    gold: "Executive Gold",
-                    cyber: "Cyber Threat (Red/Neon)",
-                    obsidian: "Platinum Obsidian",
-                    light: "Swiss Institutional Light"
-                };
-                showToast(`Color Palette: ${themeNames[newTheme] || newTheme} activated`, "success");
-            });
-        }
     }
 
-    function inspectCurrentCaseInDocket() {
-        const txId = (document.getElementById("wireTxId")?.value || "").trim();
-        switchTab("triage");
-        if (txId && triageSearchInput) {
-            triageSearchInput.value = txId;
-            renderTriageTable();
-        }
+    function initializeNavigation() {
+        document.querySelectorAll("[data-nav]").forEach(
+            (button) => {
+                button.addEventListener("click", () => {
+                    navigateTo(button.dataset.nav);
+                });
+            }
+        );
+
+        document.querySelectorAll("[data-open-view]").forEach(
+            (button) => {
+                button.addEventListener("click", () => {
+                    navigateTo(button.dataset.openView);
+                });
+            }
+        );
+
+        getElement("sidebarToggle")
+            ?.addEventListener("click", toggleMobileSidebar);
+
+        getElement("sidebarOverlay")
+            ?.addEventListener("click", closeMobileSidebar);
+
+        getElement("logoutButton")
+            ?.addEventListener("click", handleLogout);
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeMobileSidebar();
+            }
+        });
     }
 
-    // Export to Window for inline button bindings
-    window.BankingTerminal = {
-        switchTab,
-        updateCaseStatus,
-        deleteCase,
-        populateWirePreset,
-        inspectCurrentCaseInDocket,
-    };
 
-    // Initialize on DOM Ready
-    document.addEventListener("DOMContentLoaded", () => {
-        initMotionCanvas();
-        registerTerminalListeners();
+    // ========================================================
+    // 6. DATE AND FOOTER
+    // ========================================================
 
-        // Default timestamp input
-        const ts = document.getElementById("wireTimestamp");
-        if (ts) ts.value = new Date().toISOString().slice(0, 16);
+    function initializeDateAndFooter() {
+        const now = new Date();
 
-        if (window.FraudAPI && window.FraudAPI.isAuthenticated()) {
-            setOperatorAuthenticated("ADMIN", "CHIEF RISK OFFICER");
+        setText(
+            "dashboardDate",
+            now.toLocaleDateString("en-IN", {
+                weekday: "short",
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+            })
+        );
+
+        setText(
+            "dashboardFooterYear",
+            `© ${now.getFullYear()}`
+        );
+    }
+
+
+    // ========================================================
+    // 7. NORMALIZE API RESPONSES
+    // ========================================================
+
+    function normalizeAlertList(response) {
+        if (Array.isArray(response)) {
+            return response;
+        }
+
+        if (!response || typeof response !== "object") {
+            return [];
+        }
+
+        const possibleLists = [
+            response.alerts,
+            response.items,
+            response.results,
+            response.data
+        ];
+
+        for (const list of possibleLists) {
+            if (Array.isArray(list)) {
+                return list;
+            }
+
+            if (list && Array.isArray(list.alerts)) {
+                return list.alerts;
+            }
+        }
+
+        return [];
+    }
+
+    function normalizeAlert(alert) {
+        const probability = getFirstValue(alert, [
+            "fraud_probability",
+            "probability",
+            "prediction_probability"
+        ]);
+
+        const riskScore = getFirstValue(alert, [
+            "risk_score",
+            "riskScore"
+        ]);
+
+        return {
+            id: getFirstValue(alert, [
+                "id",
+                "alert_id",
+                "alertId"
+            ]),
+
+            transactionId: getFirstValue(alert, [
+                "transaction_id",
+                "transactionId",
+                "transaction"
+            ], "Unknown transaction"),
+
+            probability,
+            riskScore,
+
+            prediction: getFirstValue(alert, [
+                "prediction",
+                "predicted_label"
+            ], "Suspicious"),
+
+            riskLevel: getFirstValue(alert, [
+                "risk_level",
+                "riskLevel"
+            ], "Unknown"),
+
+            status: getFirstValue(alert, [
+                "status",
+                "alert_status"
+            ], "New"),
+
+            createdAt: getFirstValue(alert, [
+                "created_at",
+                "createdAt",
+                "timestamp"
+            ]),
+
+            updatedAt: getFirstValue(alert, [
+                "updated_at",
+                "updatedAt"
+            ]),
+
+            raw: alert
+        };
+    }
+
+    function getSummaryCount(summary, keys, fallback = 0) {
+        const value = getFirstValue(summary, keys);
+
+        return value === undefined
+            ? fallback
+            : toNumber(value, fallback);
+    }
+
+    function getAlertCounts() {
+        const statuses = state.alerts.map(normalizeAlert);
+
+        return {
+            total: statuses.length,
+
+            new: statuses.filter(
+                (alert) => alert.status === "New"
+            ).length,
+
+            review: statuses.filter(
+                (alert) => alert.status === "Under Review"
+            ).length,
+
+            resolved: statuses.filter(
+                (alert) => alert.status === "Resolved"
+            ).length
+        };
+    }
+
+    function resolveSummaryCounts() {
+        const fallback = getAlertCounts();
+        const summary = state.summary || {};
+
+        return {
+            total: getSummaryCount(
+                summary,
+                ["total", "total_alerts", "total_count"],
+                fallback.total
+            ),
+
+            new: getSummaryCount(
+                summary,
+                ["new", "new_alerts", "new_count"],
+                fallback.new
+            ),
+
+            review: getSummaryCount(
+                summary,
+                [
+                    "under_review",
+                    "under_review_alerts",
+                    "under_review_count"
+                ],
+                fallback.review
+            ),
+
+            resolved: getSummaryCount(
+                summary,
+                [
+                    "resolved",
+                    "resolved_alerts",
+                    "resolved_count"
+                ],
+                fallback.resolved
+            )
+        };
+    }
+
+
+    // ========================================================
+    // 8. FETCH ALERTS AND SUMMARY
+    // ========================================================
+
+    async function fetchAlerts() {
+        const response = await API.getAlerts();
+
+        state.alerts = normalizeAlertList(response);
+
+        return state.alerts;
+    }
+
+    async function fetchSummary() {
+        state.summary = await API.getAlertsSummary();
+
+        if (
+            !state.summary ||
+            typeof state.summary !== "object"
+        ) {
+            state.summary = {};
+        }
+
+        return state.summary;
+    }
+
+    async function fetchHealth() {
+        state.health = await API.getHealth();
+
+        return state.health;
+    }
+
+    async function loadDashboardData() {
+        if (!requireAuthentication()) {
+            return;
+        }
+
+        const results = await Promise.allSettled([
+            fetchHealth(),
+            fetchAlerts(),
+            fetchSummary()
+        ]);
+
+        if (!API.isAuthenticated()) {
+            window.location.replace(
+                "login.html?next=dashboard.html"
+            );
+
+            return;
+        }
+
+        const failures = results.filter(
+            (result) => result.status === "rejected"
+        );
+
+        if (failures.length > 0) {
+            console.error(
+                "Some dashboard requests failed:",
+                failures.map((item) => item.reason)
+            );
+        }
+
+        renderOverview();
+        renderSystemHealth();
+
+        if (failures.length === results.length) {
+            showMessage(
+                "Unable to load dashboard data. Check the backend connection.",
+                "error"
+            );
+
+            return;
+        }
+
+        if (failures.length > 0) {
+            showMessage(
+                "Some information could not be refreshed. Available data is displayed.",
+                "info"
+            );
         } else {
-            setOperatorLoggedOut();
+            clearMessage();
         }
-    });
+    }
+
+
+    // ========================================================
+    // 9. ALERT SUMMARY DISPLAY
+    // ========================================================
+
+    function renderOverview() {
+        const counts = resolveSummaryCounts();
+
+        setText("statTotalAlerts", formatNumber(counts.total));
+        setText("statNewAlerts", formatNumber(counts.new));
+        setText("statUnderReviewAlerts", formatNumber(counts.review));
+        setText("statResolvedAlerts", formatNumber(counts.resolved));
+
+        setText("distributionNewCount", formatNumber(counts.new));
+        setText("distributionReviewCount", formatNumber(counts.review));
+        setText("distributionResolvedCount", formatNumber(counts.resolved));
+
+        setText(
+            "sidebarAlertCount",
+            formatNumber(counts.new)
+        );
+
+        setText(
+            "alertDistributionTotal",
+            `${formatNumber(counts.total)} alerts`
+        );
+
+        const total = Math.max(counts.total, 0);
+
+        const newPercent = total > 0
+            ? (counts.new / total) * 100
+            : 0;
+
+        const reviewPercent = total > 0
+            ? (counts.review / total) * 100
+            : 0;
+
+        const resolvedPercent = total > 0
+            ? (counts.resolved / total) * 100
+            : 0;
+
+        updateBar("overviewNewBar", newPercent);
+        updateBar("overviewReviewBar", reviewPercent);
+        updateBar("overviewResolvedBar", resolvedPercent);
+
+        renderRiskDistribution();
+        renderRecentAlerts();
+    }
+
+    function updateBar(id, percentage) {
+        const element = getElement(id);
+
+        if (!element) {
+            return;
+        }
+
+        const safePercentage = Math.min(
+            100,
+            Math.max(0, percentage)
+        );
+
+        element.style.width = `${safePercentage}%`;
+    }
+
+    function renderRiskDistribution() {
+        const alerts = state.alerts.map(normalizeAlert);
+
+        const counts = {
+            high: 0,
+            medium: 0,
+            low: 0
+        };
+
+        alerts.forEach((alert) => {
+            const level = String(alert.riskLevel).toLowerCase();
+
+            if (level === "high") {
+                counts.high += 1;
+            } else if (level === "medium") {
+                counts.medium += 1;
+            } else if (level === "low") {
+                counts.low += 1;
+            }
+        });
+
+        setText("riskHighCount", formatNumber(counts.high));
+        setText("riskMediumCount", formatNumber(counts.medium));
+        setText("riskLowCount", formatNumber(counts.low));
+
+        const total = alerts.length || 0;
+
+        updateBar(
+            "riskHighBar",
+            total ? (counts.high / total) * 100 : 0
+        );
+
+        updateBar(
+            "riskMediumBar",
+            total ? (counts.medium / total) * 100 : 0
+        );
+
+        updateBar(
+            "riskLowBar",
+            total ? (counts.low / total) * 100 : 0
+        );
+    }
+
+
+    // ========================================================
+    // 10. ALERT BADGES AND TABLE ROWS
+    // ========================================================
+
+    function statusClass(status) {
+        return String(status)
+            .toLowerCase()
+            .replace(/\s+/g, "-");
+    }
+
+    function predictionClass(prediction) {
+        return String(prediction).toLowerCase() === "suspicious"
+            ? "suspicious"
+            : "normal";
+    }
+
+    function riskClass(level) {
+        const normalized = String(level).toLowerCase();
+
+        if (normalized === "high") {
+            return "high";
+        }
+
+        if (normalized === "medium") {
+            return "medium";
+        }
+
+        if (normalized === "low") {
+            return "low";
+        }
+
+        return "";
+    }
+
+    function renderRecentAlerts() {
+        const tbody = getElement("recentAlertsBody");
+
+        if (!tbody) {
+            return;
+        }
+
+        const sortedAlerts = state.alerts
+            .map(normalizeAlert)
+            .sort((a, b) => {
+                const first = new Date(a.createdAt || 0).getTime();
+                const second = new Date(b.createdAt || 0).getTime();
+
+                return second - first;
+            })
+            .slice(0, 5);
+
+        if (sortedAlerts.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="table-empty">
+                        No alert records were returned by the backend.
+                    </td>
+                </tr>
+            `;
+
+            setText(
+                "recentAlertsCount",
+                "No alert records available"
+            );
+
+            return;
+        }
+
+        tbody.innerHTML = sortedAlerts.map((alert) => {
+            const probability = formatProbability(alert.probability);
+            const riskClassName = riskClass(alert.riskLevel);
+
+            return `
+                <tr>
+                    <td>
+                        <span class="transaction-id">
+                            ${escapeHTML(alert.transactionId)}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="prediction-badge ${predictionClass(alert.prediction)}">
+                            ${escapeHTML(alert.prediction)}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="probability-value">
+                            ${escapeHTML(probability)}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="risk-badge ${riskClassName}">
+                            ${escapeHTML(alert.riskLevel)}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="status-badge ${statusClass(alert.status)}">
+                            ${escapeHTML(alert.status)}
+                        </span>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(formatTimestamp(alert.createdAt))}
+                    </td>
+                </tr>
+            `;
+        }).join("");
+
+        setText(
+            "recentAlertsCount",
+            `Showing ${sortedAlerts.length} most recent alert records`
+        );
+    }
+
+
+    // ========================================================
+    // 11. ALERT MANAGEMENT TABLE
+    // ========================================================
+
+    function getFilteredAlerts() {
+        const searchValue = (
+            getElement("alertsSearchInput")?.value || ""
+        ).trim().toLowerCase();
+
+        const statusValue =
+            getElement("alertsStatusFilter")?.value || "";
+
+        return state.alerts
+            .map(normalizeAlert)
+            .filter((alert) => {
+                const matchesSearch =
+                    String(alert.transactionId)
+                        .toLowerCase()
+                        .includes(searchValue);
+
+                const matchesStatus =
+                    !statusValue ||
+                    alert.status === statusValue;
+
+                return matchesSearch && matchesStatus;
+            })
+            .sort((a, b) => {
+                const first = new Date(a.createdAt || 0).getTime();
+                const second = new Date(b.createdAt || 0).getTime();
+
+                return second - first;
+            });
+    }
+
+    function renderAlertManagementSummary() {
+        const counts = resolveSummaryCounts();
+
+        setText("alertsPageTotal", formatNumber(counts.total));
+        setText("alertsPageNew", formatNumber(counts.new));
+        setText("alertsPageReview", formatNumber(counts.review));
+        setText("alertsPageResolved", formatNumber(counts.resolved));
+
+        setText(
+            "sidebarAlertCount",
+            formatNumber(counts.new)
+        );
+    }
+
+    function renderAlertsTable() {
+        const tbody = getElement("alertsTableBody");
+
+        if (!tbody) {
+            return;
+        }
+
+        const alerts = getFilteredAlerts();
+
+        if (alerts.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="table-empty">
+                        No alerts match the selected filters.
+                    </td>
+                </tr>
+            `;
+
+            setText("alertsCountLabel", "No matching alerts");
+            return;
+        }
+
+        tbody.innerHTML = alerts.map((alert) => {
+            const id = escapeHTML(alert.id);
+            const probability = formatProbability(alert.probability);
+
+            const score = alert.riskScore === undefined
+                || alert.riskScore === null
+                ? "—"
+                : toNumber(alert.riskScore).toFixed(2);
+
+            const statusOptions = ALERT_STATUSES.map((status) => {
+                const selected = alert.status === status
+                    ? "selected"
+                    : "";
+
+                return `
+                    <option value="${escapeHTML(status)}" ${selected}>
+                        ${escapeHTML(status)}
+                    </option>
+                `;
+            }).join("");
+
+            return `
+                <tr data-alert-row="${id}">
+                    <td>
+                        <span class="transaction-id">
+                            #${id}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="transaction-id">
+                            ${escapeHTML(alert.transactionId)}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="probability-value">
+                            ${escapeHTML(probability)}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="risk-score-value">
+                            ${escapeHTML(score)}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="risk-badge ${riskClass(alert.riskLevel)}">
+                            ${escapeHTML(alert.riskLevel)}
+                        </span>
+                    </td>
+
+                    <td>
+                        <select
+                            class="alert-status-select"
+                            data-alert-status="${id}"
+                            aria-label="Change status for alert ${id}"
+                        >
+                            ${statusOptions}
+                        </select>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(formatTimestamp(alert.createdAt))}
+                    </td>
+
+                    <td>
+                        <div class="alert-actions-cell">
+
+                            <button
+                                type="button"
+                                class="table-action-button"
+                                data-view-alert="${id}"
+                            >
+                                View
+                            </button>
+
+                            <button
+                                type="button"
+                                class="table-action-button delete"
+                                data-delete-alert="${id}"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+
+        setText(
+            "alertsCountLabel",
+            `Showing ${alerts.length} of ${state.alerts.length} alert records`
+        );
+    }
+
+    async function loadAlerts() {
+        if (!requireAuthentication()) {
+            return;
+        }
+
+        const tbody = getElement("alertsTableBody");
+
+        if (tbody && state.alerts.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="table-empty">
+                        <span class="table-loading-indicator"></span>
+                        Loading alert records...
+                    </td>
+                </tr>
+            `;
+        }
+
+        try {
+            const results = await Promise.allSettled([
+                fetchAlerts(),
+                fetchSummary()
+            ]);
+
+            if (!API.isAuthenticated()) {
+                window.location.replace("login.html");
+                return;
+            }
+
+            const failed = results.some(
+                (result) => result.status === "rejected"
+            );
+
+            renderAlertManagementSummary();
+            renderAlertsTable();
+            renderOverview();
+
+            if (failed) {
+                showMessage(
+                    "Some alert information could not be refreshed.",
+                    "error"
+                );
+            } else {
+                clearMessage();
+            }
+
+        } catch (error) {
+            console.error("Unable to load alerts:", error);
+
+            showMessage(
+                error.message || "Unable to load alerts.",
+                "error"
+            );
+        }
+    }
+
+
+    // ========================================================
+    // 12. CHANGE ALERT STATUS
+    // ========================================================
+
+    async function handleAlertStatusChange(event) {
+        const select = event.target.closest(
+            "[data-alert-status]"
+        );
+
+        if (!select) {
+            return;
+        }
+
+        const alertId = select.dataset.alertStatus;
+        const newStatus = select.value;
+
+        if (!ALERT_STATUSES.includes(newStatus)) {
+            showMessage("Invalid alert status.", "error");
+            return;
+        }
+
+        select.disabled = true;
+
+        try {
+            await API.updateAlertStatus(alertId, newStatus);
+
+            showMessage(
+                `Alert #${alertId} status changed to ${newStatus}.`,
+                "success"
+            );
+
+            await Promise.allSettled([
+                fetchAlerts(),
+                fetchSummary()
+            ]);
+
+            renderOverview();
+            renderAlertsTable();
+            renderAlertManagementSummary();
+
+        } catch (error) {
+            console.error("Failed to update alert:", error);
+
+            showMessage(
+                error.message || "Unable to update alert status.",
+                "error"
+            );
+
+            await loadAlerts();
+
+        } finally {
+            select.disabled = false;
+        }
+    }
+
+
+    // ========================================================
+    // 13. DELETE ALERT
+    // ========================================================
+
+    async function handleDeleteAlert(alertId) {
+        const alert = state.alerts
+            .map(normalizeAlert)
+            .find((item) => String(item.id) === String(alertId));
+
+        const transactionId = alert
+            ? alert.transactionId
+            : `#${alertId}`;
+
+        const confirmed = window.confirm(
+            `Delete alert ${transactionId}?\n\n` +
+            "This removes the alert record from the backend."
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            await API.deleteAlert(alertId);
+
+            showMessage(
+                `Alert ${transactionId} was deleted.`,
+                "success"
+            );
+
+            if (
+                String(state.selectedAlertId) === String(alertId)
+            ) {
+                closeAlertDetails();
+            }
+
+            await Promise.allSettled([
+                fetchAlerts(),
+                fetchSummary()
+            ]);
+
+            renderOverview();
+            renderAlertsTable();
+            renderAlertManagementSummary();
+
+        } catch (error) {
+            console.error("Unable to delete alert:", error);
+
+            showMessage(
+                error.message || "Unable to delete alert.",
+                "error"
+            );
+        }
+    }
+
+
+    // ========================================================
+    // 14. ALERT DETAILS
+    // ========================================================
+
+    async function showAlertDetails(alertId) {
+        const panel = getElement("alertDetailsPanel");
+        const content = getElement("alertDetailsContent");
+
+        if (!panel || !content) {
+            return;
+        }
+
+        state.selectedAlertId = alertId;
+
+        panel.hidden = false;
+
+        content.textContent = "Loading alert details...";
+
+        try {
+            const response = await API.request(
+                `/alerts/${encodeURIComponent(alertId)}`
+            );
+
+            const alert = response?.alert || response?.data || response;
+
+            const normalized = normalizeAlert(alert);
+
+            const values = [
+                ["Alert ID", normalized.id],
+                ["Transaction ID", normalized.transactionId],
+                ["Prediction", normalized.prediction],
+                [
+                    "Fraud Probability",
+                    formatProbability(normalized.probability)
+                ],
+                ["Risk Score", normalized.riskScore],
+                ["Risk Level", normalized.riskLevel],
+                ["Status", normalized.status],
+                ["Created At", formatTimestamp(normalized.createdAt)],
+                ["Updated At", formatTimestamp(normalized.updatedAt)]
+            ];
+
+            content.innerHTML = `
+                <div class="alert-details-grid">
+                    ${values.map(([label, value]) => `
+                        <div class="alert-detail-item">
+                            <span>${escapeHTML(label)}</span>
+                            <strong>${escapeHTML(value ?? "—")}</strong>
+                        </div>
+                    `).join("")}
+                </div>
+            `;
+
+            panel.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+
+        } catch (error) {
+            console.error("Unable to get alert details:", error);
+
+            content.textContent =
+                error.message || "Unable to retrieve alert details.";
+        }
+    }
+
+    function closeAlertDetails() {
+        const panel = getElement("alertDetailsPanel");
+
+        if (panel) {
+            panel.hidden = true;
+        }
+
+        state.selectedAlertId = null;
+    }
+
+    function initializeAlertActions() {
+        getElement("alertsTableBody")
+            ?.addEventListener("change", handleAlertStatusChange);
+
+        getElement("alertsTableBody")
+            ?.addEventListener("click", (event) => {
+                const viewButton = event.target.closest(
+                    "[data-view-alert]"
+                );
+
+                if (viewButton) {
+                    showAlertDetails(
+                        viewButton.dataset.viewAlert
+                    );
+
+                    return;
+                }
+
+                const deleteButton = event.target.closest(
+                    "[data-delete-alert]"
+                );
+
+                if (deleteButton) {
+                    handleDeleteAlert(
+                        deleteButton.dataset.deleteAlert
+                    );
+                }
+            });
+
+        getElement("alertsSearchInput")
+            ?.addEventListener("input", renderAlertsTable);
+
+        getElement("alertsStatusFilter")
+            ?.addEventListener("change", renderAlertsTable);
+
+        getElement("closeAlertDetailsButton")
+            ?.addEventListener("click", closeAlertDetails);
+
+        getElement("refreshAlertsButton")
+            ?.addEventListener("click", loadAlerts);
+    }
+
+
+    // ========================================================
+    // 15. HEALTH AND MONITORING
+    // ========================================================
+
+    function isHealthyValue(value) {
+        if (value === true) {
+            return true;
+        }
+
+        if (value === false || value === null || value === undefined) {
+            return false;
+        }
+
+        const normalized = String(value).toLowerCase();
+
+        return [
+            "healthy",
+            "connected",
+            "online",
+            "ready",
+            "ok",
+            "true",
+            "up"
+        ].includes(normalized);
+    }
+
+    function getDatabaseHealth(health) {
+        const database = health?.database;
+
+        if (typeof database === "string") {
+            return database;
+        }
+
+        if (database && typeof database === "object") {
+            return getFirstValue(database, [
+                "status",
+                "state"
+            ], database.connected === true ? "connected" : "unknown");
+        }
+
+        return "unknown";
+    }
+
+    function setMonitoringStatus(
+        valueId,
+        detailId,
+        isOnline,
+        value,
+        detail
+    ) {
+        const valueElement = getElement(valueId);
+        const detailElement = getElement(detailId);
+
+        if (valueElement) {
+            valueElement.textContent = value;
+
+            valueElement.classList.remove(
+                "status-online",
+                "status-offline",
+                "status-unknown"
+            );
+
+            valueElement.classList.add(
+                isOnline ? "status-online" : "status-offline"
+            );
+        }
+
+        if (detailElement) {
+            detailElement.textContent = detail;
+
+            const footer = detailElement.closest(
+                ".monitoring-card-footer"
+            );
+
+            if (footer) {
+                footer.classList.remove(
+                    "status-online",
+                    "status-offline",
+                    "status-unknown"
+                );
+
+                footer.classList.add(
+                    isOnline ? "status-online" : "status-offline"
+                );
+            }
+        }
+    }
+
+    function renderSystemHealth() {
+        const health = state.health;
+
+        if (!health || typeof health !== "object") {
+            setText(
+                "sidebarSystemStatus",
+                "Status unavailable"
+            );
+
+            setText(
+                "systemHealthText",
+                "Unknown status"
+            );
+
+            return;
+        }
+
+        const apiStatus = getFirstValue(
+            health,
+            ["status", "api_status"],
+            "unknown"
+        );
+
+        const databaseStatus = getDatabaseHealth(health);
+
+        const modelLoaded = getFirstValue(
+            health,
+            ["model_loaded", "modelLoaded"],
+            false
+        );
+
+        const apiOnline = isHealthyValue(apiStatus);
+        const databaseOnline = isHealthyValue(databaseStatus);
+        const modelOnline = modelLoaded === true ||
+            isHealthyValue(modelLoaded);
+
+        const allHealthy =
+            apiOnline &&
+            databaseOnline &&
+            modelOnline;
+
+        setText(
+            "sidebarSystemStatus",
+            allHealthy
+                ? "All systems operational"
+                : "Service attention required"
+        );
+
+        setText(
+            "systemHealthText",
+            allHealthy
+                ? "All systems healthy"
+                : "Check service status"
+        );
+
+        setMonitoringStatus(
+            "monitoringApiStatus",
+            "monitoringApiDetail",
+            apiOnline,
+            apiOnline ? "Online" : "Unavailable",
+            `API status: ${apiStatus}`
+        );
+
+        setMonitoringStatus(
+            "monitoringDatabaseStatus",
+            "monitoringDatabaseDetail",
+            databaseOnline,
+            databaseOnline ? "Connected" : "Unavailable",
+            `Database status: ${databaseStatus}`
+        );
+
+        setMonitoringStatus(
+            "monitoringModelStatus",
+            "monitoringModelDetail",
+            modelOnline,
+            modelOnline ? "Loaded" : "Unavailable",
+            `Model loaded: ${modelOnline ? "Yes" : "No"}`
+        );
+
+        const threshold = getFirstValue(
+            health,
+            ["threshold", "calibrated_threshold", "decision_threshold"],
+            null
+        );
+
+        setText(
+            "monitoringThreshold",
+            threshold === null
+                ? "Not reported"
+                : toNumber(threshold).toFixed(2)
+        );
+
+        // Keep the topbar status visually consistent.
+        const badge = getElement("systemHealthBadge");
+
+        if (badge) {
+            badge.classList.toggle("status-offline", !allHealthy);
+        }
+    }
+
+    function renderMonitoringSummary() {
+        const counts = resolveSummaryCounts();
+
+        setText("monitoringTotalAlerts", formatNumber(counts.total));
+        setText("monitoringNewAlerts", formatNumber(counts.new));
+        setText("monitoringReviewAlerts", formatNumber(counts.review));
+        setText("monitoringResolvedAlerts", formatNumber(counts.resolved));
+    }
+
+    async function loadMonitoring() {
+        if (!requireAuthentication()) {
+            return;
+        }
+
+        const results = await Promise.allSettled([
+            fetchHealth(),
+            fetchAlerts(),
+            fetchSummary()
+        ]);
+
+        if (!API.isAuthenticated()) {
+            window.location.replace("login.html");
+            return;
+        }
+
+        renderSystemHealth();
+        renderMonitoringSummary();
+
+        const failures = results.filter(
+            (result) => result.status === "rejected"
+        );
+
+        if (failures.length > 0) {
+            console.error(
+                "Monitoring refresh errors:",
+                failures.map((item) => item.reason)
+            );
+
+            showMessage(
+                "Some monitoring information could not be refreshed.",
+                "error"
+            );
+        } else {
+            clearMessage();
+        }
+    }
+
+
+    // ========================================================
+    // 16. TRANSACTION FORM HELPERS
+    // ========================================================
+
+    function initializeTransactionForm() {
+        const timestampInput = getElement("transactionTimestamp");
+
+        if (timestampInput && !timestampInput.value) {
+            const now = new Date();
+
+            now.setMinutes(
+                now.getMinutes() - now.getTimezoneOffset()
+            );
+
+            timestampInput.value = now
+                .toISOString()
+                .slice(0, 16);
+        }
+
+        getElement("transactionPredictionForm")
+            ?.addEventListener("submit", handlePredictionSubmit);
+
+        getElement("resetPredictionFormButton")
+            ?.addEventListener("click", () => {
+                resetPredictionResult();
+            });
+
+        getElement("newPredictionButton")
+            ?.addEventListener("click", () => {
+                resetPredictionResult();
+
+                getElement("predictTransactionId")?.focus();
+            });
+
+        initializeInputClearButtons();
+    }
+
+    function initializeInputClearButtons() {
+        const wrappers = document.querySelectorAll(".input-clearable-wrapper");
+
+        wrappers.forEach((wrapper) => {
+            const input = wrapper.querySelector("input");
+            const btn = wrapper.querySelector(".input-clear-btn");
+            if (!input || !btn) return;
+
+            const updateVisibility = () => {
+                if (input.value && String(input.value).trim().length > 0) {
+                    btn.classList.add("is-visible");
+                } else {
+                    btn.classList.remove("is-visible");
+                }
+            };
+
+            // Initial visibility check
+            updateVisibility();
+
+            // Listen for typing and value updates
+            input.addEventListener("input", updateVisibility);
+            input.addEventListener("change", updateVisibility);
+
+            // Wrong icon click handler: clears already written input
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                input.value = "";
+                btn.classList.remove("is-visible");
+
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+
+                input.focus();
+            });
+        });
+
+        // Ensure clear buttons update when the form is reset
+        const resetBtn = getElement("resetPredictionFormButton");
+        if (resetBtn) {
+            resetBtn.addEventListener("click", () => {
+                setTimeout(() => {
+                    wrappers.forEach((wrapper) => {
+                        const input = wrapper.querySelector("input");
+                        const btn = wrapper.querySelector(".input-clear-btn");
+                        if (!input || !btn) return;
+                        if (input.value && String(input.value).trim().length > 0) {
+                            btn.classList.add("is-visible");
+                        } else {
+                            btn.classList.remove("is-visible");
+                        }
+                    });
+                }, 60);
+            });
+        }
+    }
+
+    function buildTransactionPayload(form) {
+        const formData = new FormData(form);
+
+        const requiredFields = [
+            "transaction_id",
+            "timestamp",
+            "sender_account_id",
+            "receiver_account_id",
+            "amount",
+            "type",
+            "device_id",
+            "ip_address",
+            "location",
+            "account_balance",
+            "user_device_recognition",
+            "known_threat_flag",
+            "login_location_match",
+            "spending_pattern_deviation"
+        ];
+
+        for (const field of requiredFields) {
+            const value = formData.get(field);
+
+            if (value === null || String(value).trim() === "") {
+                throw new Error(
+                    `Please fill in the ${field.replace(/_/g, " ")} field.`
+                );
+            }
+        }
+
+        const timestamp = new Date(
+            String(formData.get("timestamp"))
+        );
+
+        if (Number.isNaN(timestamp.getTime())) {
+            throw new Error("Please enter a valid transaction timestamp.");
+        }
+
+        const amount = Number(formData.get("amount"));
+        const balance = Number(formData.get("account_balance"));
+        const deviation = Number(
+            formData.get("spending_pattern_deviation")
+        );
+
+        if (
+            !Number.isFinite(amount) ||
+            !Number.isFinite(balance) ||
+            !Number.isFinite(deviation) ||
+            amount < 0 ||
+            balance < 0 ||
+            deviation < 0
+        ) {
+            throw new Error(
+                "Amounts, balance, and deviation must be valid non-negative numbers."
+            );
+        }
+
+        return {
+            transaction_id: String(
+                formData.get("transaction_id")
+            ).trim(),
+
+            timestamp: timestamp.toISOString(),
+
+            sender_account_id: String(
+                formData.get("sender_account_id")
+            ).trim(),
+
+            receiver_account_id: String(
+                formData.get("receiver_account_id")
+            ).trim(),
+
+            amount,
+
+            type: String(formData.get("type")),
+
+            device_id: String(
+                formData.get("device_id")
+            ).trim(),
+
+            ip_address: String(
+                formData.get("ip_address")
+            ).trim(),
+
+            location: String(
+                formData.get("location")
+            ).trim(),
+
+            account_balance: balance,
+
+            user_device_recognition: Number(
+                formData.get("user_device_recognition")
+            ),
+
+            known_threat_flag: Number(
+                formData.get("known_threat_flag")
+            ),
+
+            login_location_match: Number(
+                formData.get("login_location_match")
+            ),
+
+            spending_pattern_deviation: deviation
+        };
+    }
+
+
+    // ========================================================
+    // 17. RUN SINGLE TRANSACTION PREDICTION
+    // ========================================================
+
+    function setPredictionLoading(isLoading) {
+        const button = getElement("runPredictionButton");
+        const text = getElement("runPredictionButtonText");
+
+        if (button) {
+            button.disabled = isLoading;
+            button.setAttribute(
+                "aria-busy",
+                String(isLoading)
+            );
+        }
+
+        if (text) {
+            text.textContent = isLoading
+                ? "Analyzing Transaction..."
+                : "Run Fraud Analysis";
+        }
+    }
+
+    function resetPredictionResult() {
+        const placeholder = getElement(
+            "predictionResultPlaceholder"
+        );
+
+        const content = getElement(
+            "predictionResultContent"
+        );
+
+        if (placeholder) {
+            placeholder.hidden = false;
+        }
+
+        if (content) {
+            content.hidden = true;
+        }
+
+        setText("predictionLabel", "—");
+        setText("predictionProbability", "—");
+        setText("predictionRiskScore", "—");
+        setText("predictionRiskLevel", "—");
+        setText("predictionTransactionId", "—");
+
+        const bar = getElement("predictionProbabilityBar");
+
+        if (bar) {
+            bar.style.width = "0%";
+        }
+
+        const note = getElement("predictionAlertNote");
+
+        if (note) {
+            note.textContent = "";
+            note.className = "prediction-alert-note";
+        }
+    }
+
+    function renderPredictionResult(response, submittedPayload) {
+        const placeholder = getElement(
+            "predictionResultPlaceholder"
+        );
+
+        const content = getElement(
+            "predictionResultContent"
+        );
+
+        if (placeholder) {
+            placeholder.hidden = true;
+        }
+
+        if (content) {
+            content.hidden = false;
+        }
+
+        const prediction = getFirstValue(
+            response,
+            ["prediction", "predicted_label", "label"],
+            "Unknown"
+        );
+
+        const probability = getFirstValue(
+            response,
+            ["fraud_probability", "probability", "prediction_probability"],
+            null
+        );
+
+        const riskScore = getFirstValue(
+            response,
+            ["risk_score", "riskScore"],
+            probability === null
+                ? null
+                : normalizeProbability(probability) * 100
+        );
+
+        const riskLevel = getFirstValue(
+            response,
+            ["risk_level", "riskLevel"],
+            "Not reported"
+        );
+
+        const transactionId = getFirstValue(
+            response,
+            ["transaction_id", "transactionId"],
+            submittedPayload.transaction_id
+        );
+
+        const percentage = normalizeProbability(probability);
+
+        setText("predictionLabel", prediction);
+        setText(
+            "predictionProbability",
+            formatProbability(probability)
+        );
+
+        setText(
+            "predictionRiskScore",
+            riskScore === null
+                ? "—"
+                : toNumber(riskScore).toFixed(2)
+        );
+
+        setText("predictionRiskLevel", riskLevel);
+        setText("predictionTransactionId", transactionId);
+
+        const label = getElement("predictionLabel");
+
+        if (label) {
+            label.className =
+                "prediction-label " +
+                predictionClass(prediction);
+        }
+
+        const bar = getElement("predictionProbabilityBar");
+
+        if (bar) {
+            bar.style.width = `${
+                percentage === null ? 0 : percentage * 100
+            }%`;
+        }
+
+        const note = getElement("predictionAlertNote");
+
+        if (note) {
+            note.className = "prediction-alert-note";
+
+            if (
+                String(prediction).toLowerCase() === "suspicious"
+            ) {
+                note.classList.add("warning");
+
+                note.textContent =
+                    "The model flagged this transaction as Suspicious. " +
+                    "Check Alert Management for a corresponding stored alert.";
+            } else if (
+                String(prediction).toLowerCase() === "normal"
+            ) {
+                note.classList.add("success");
+
+                note.textContent =
+                    "The model classified this transaction as Normal " +
+                    "according to the backend's configured decision rule.";
+            } else {
+                note.textContent =
+                    "Prediction received. Review the returned values.";
+            }
+        }
+    }
+
+    async function handlePredictionSubmit(event) {
+        event.preventDefault();
+
+        if (!requireAuthentication()) {
+            return;
+        }
+
+        clearMessage();
+
+        const form = getElement("transactionPredictionForm");
+
+        if (!form) {
+            return;
+        }
+
+        let payload;
+
+        try {
+            payload = buildTransactionPayload(form);
+        } catch (error) {
+            showMessage(error.message, "error");
+            return;
+        }
+
+        setPredictionLoading(true);
+
+        try {
+            const response = await API.predictTransaction(payload);
+
+            renderPredictionResult(response, payload);
+
+            showMessage(
+                "Transaction prediction completed successfully.",
+                "success"
+            );
+
+            // Refresh alert information after a prediction.
+            await Promise.allSettled([
+                fetchAlerts(),
+                fetchSummary()
+            ]);
+
+            renderOverview();
+
+        } catch (error) {
+            console.error("Prediction request failed:", error);
+
+            showMessage(
+                error.message || "Unable to predict this transaction.",
+                "error"
+            );
+
+        } finally {
+            setPredictionLoading(false);
+        }
+    }
+
+
+    // ========================================================
+    // 18. BATCH ANALYSIS
+    // ========================================================
+
+    function initializeBatchAnalysis() {
+        getElement("batchPredictionForm")
+            ?.addEventListener("submit", handleBatchSubmit);
+
+        getElement("formatBatchJsonButton")
+            ?.addEventListener("click", formatBatchJSON);
+
+        getElement("clearBatchPayloadButton")
+            ?.addEventListener("click", clearBatchPayload);
+
+        getElement("copyBatchResponseButton")
+            ?.addEventListener("click", copyBatchResponse);
+    }
+
+    function formatBatchJSON() {
+        const textarea = getElement("batchPayload");
+
+        if (!textarea) {
+            return;
+        }
+
+        try {
+            const data = JSON.parse(textarea.value);
+
+            textarea.value = JSON.stringify(data, null, 2);
+
+            showMessage("Batch JSON formatted successfully.", "success");
+
+        } catch (error) {
+            showMessage(
+                `Invalid JSON: ${error.message}`,
+                "error"
+            );
+        }
+    }
+
+    function clearBatchPayload() {
+        const textarea = getElement("batchPayload");
+
+        if (textarea) {
+            textarea.value = "";
+        }
+
+        state.batchResponse = null;
+
+        const result = getElement("batchPredictionResult");
+
+        if (result) {
+            result.textContent =
+                "Submit a batch to display the API response.";
+        }
+
+        getElement("batchResultPlaceholder").hidden = false;
+        getElement("batchResultContent").hidden = true;
+
+        const copyButton = getElement("copyBatchResponseButton");
+
+        if (copyButton) {
+            copyButton.disabled = true;
+        }
+
+        clearMessage();
+    }
+
+    function setBatchLoading(isLoading) {
+        const button = getElement("runBatchPredictionButton");
+
+        const text = getElement("batchPredictionButtonText");
+
+        if (button) {
+            button.disabled = isLoading;
+            button.setAttribute(
+                "aria-busy",
+                String(isLoading)
+            );
+        }
+
+        if (text) {
+            text.textContent = isLoading
+                ? "Analyzing Batch..."
+                : "Run Batch Analysis";
+        }
+    }
+
+    function extractBatchCounts(response, submittedCount) {
+        const results = Array.isArray(response?.results)
+            ? response.results
+            : Array.isArray(response?.predictions)
+                ? response.predictions
+                : [];
+
+        const total = getFirstValue(
+            response,
+            [
+                "total_transactions",
+                "total",
+                "transactions_processed",
+                "processed_count"
+            ],
+            submittedCount
+        );
+
+        const suspicious = getFirstValue(
+            response,
+            [
+                "suspicious_count",
+                "suspicious_transactions",
+                "flagged_count"
+            ],
+            results.filter(
+                (item) =>
+                    String(item.prediction).toLowerCase() === "suspicious"
+            ).length
+        );
+
+        const normal = getFirstValue(
+            response,
+            [
+                "normal_count",
+                "normal_transactions"
+            ],
+            results.filter(
+                (item) =>
+                    String(item.prediction).toLowerCase() === "normal"
+            ).length
+        );
+
+        return {
+            total: toNumber(total, submittedCount),
+            suspicious: toNumber(suspicious),
+            normal: toNumber(normal)
+        };
+    }
+
+    function renderBatchResponse(response, submittedCount) {
+        state.batchResponse = response;
+
+        const placeholder = getElement(
+            "batchResultPlaceholder"
+        );
+
+        const content = getElement(
+            "batchResultContent"
+        );
+
+        if (placeholder) {
+            placeholder.hidden = true;
+        }
+
+        if (content) {
+            content.hidden = false;
+        }
+
+        const counts = extractBatchCounts(
+            response,
+            submittedCount
+        );
+
+        setText(
+            "batchTotalTransactions",
+            formatNumber(counts.total)
+        );
+
+        setText(
+            "batchSuspiciousCount",
+            formatNumber(counts.suspicious)
+        );
+
+        setText(
+            "batchNormalCount",
+            formatNumber(counts.normal)
+        );
+
+        const resultsElement = getElement(
+            "batchPredictionResult"
+        );
+
+        if (resultsElement) {
+            resultsElement.textContent =
+                JSON.stringify(response, null, 2);
+        }
+
+        const copyButton = getElement(
+            "copyBatchResponseButton"
+        );
+
+        if (copyButton) {
+            copyButton.disabled = false;
+        }
+
+        const message = getElement("batchResultsMessage");
+
+        if (message) {
+            message.textContent =
+                `The API returned a response for ${counts.total} transactions. ` +
+                `${counts.suspicious} were classified as Suspicious and ` +
+                `${counts.normal} as Normal, according to the returned summary.`;
+        }
+
+        const messageByClass = getElement("batchResultContent")
+            ?.querySelector(".batch-results-message");
+
+        if (messageByClass) {
+            messageByClass.textContent =
+                `Processed: ${counts.total} · ` +
+                `Suspicious: ${counts.suspicious} · ` +
+                `Normal: ${counts.normal}`;
+        }
+    }
+
+    async function handleBatchSubmit(event) {
+        event.preventDefault();
+
+        if (!requireAuthentication()) {
+            return;
+        }
+
+        clearMessage();
+
+        const textarea = getElement("batchPayload");
+
+        if (!textarea) {
+            return;
+        }
+
+        let payload;
+
+        try {
+            payload = JSON.parse(textarea.value);
+
+            if (
+                !payload ||
+                typeof payload !== "object" ||
+                Array.isArray(payload)
+            ) {
+                throw new Error(
+                    "The JSON body must be an object."
+                );
+            }
+
+            if (!Array.isArray(payload.transactions)) {
+                throw new Error(
+                    'The request must include a "transactions" array.'
+                );
+            }
+
+            if (payload.transactions.length === 0) {
+                throw new Error(
+                    "The transactions array cannot be empty."
+                );
+            }
+
+        } catch (error) {
+            showMessage(
+                `Please check the batch JSON. ${error.message}`,
+                "error"
+            );
+
+            return;
+        }
+
+        setBatchLoading(true);
+
+        try {
+            const response = await API.batchPredict(payload);
+
+            renderBatchResponse(
+                response,
+                payload.transactions.length
+            );
+
+            showMessage(
+                "Batch prediction completed successfully.",
+                "success"
+            );
+
+            await Promise.allSettled([
+                fetchAlerts(),
+                fetchSummary()
+            ]);
+
+            renderOverview();
+
+        } catch (error) {
+            console.error("Batch prediction failed:", error);
+
+            showMessage(
+                error.message || "Unable to process this batch.",
+                "error"
+            );
+
+            const resultsElement = getElement(
+                "batchPredictionResult"
+            );
+
+            if (resultsElement) {
+                resultsElement.textContent = JSON.stringify({
+                    error: error.message
+                }, null, 2);
+            }
+
+        } finally {
+            setBatchLoading(false);
+        }
+    }
+
+    async function copyBatchResponse() {
+        if (state.batchResponse === null) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(
+                JSON.stringify(state.batchResponse, null, 2)
+            );
+
+            showMessage(
+                "Batch response copied to clipboard.",
+                "success"
+            );
+
+        } catch (error) {
+            console.error("Clipboard access failed:", error);
+
+            showMessage(
+                "Unable to copy the response. Select and copy the JSON manually.",
+                "error"
+            );
+        }
+    }
+
+
+    // ========================================================
+    // 19. REFRESH BUTTONS
+    // ========================================================
+
+    function initializeRefreshButtons() {
+        getElement("refreshDashboardButton")
+            ?.addEventListener("click", loadDashboardData);
+
+        getElement("refreshMonitoringButton")
+            ?.addEventListener("click", loadMonitoring);
+    }
+
+
+    // ========================================================
+    // 19B. INTERACTIVE ANALYTICS & MACHINE LEARNING GRAPHS
+    // ========================================================
+
+    const THRESHOLD_BENCHMARKS = [
+        { threshold: 0.05, accuracy: 0.9460, precision: 0.6513, recall: 0.9900, f1: 0.7857, f2: 0.8967, tn: 1694, fp: 106, fn: 2, tp: 198, fpr: 0.0589 },
+        { threshold: 0.10, accuracy: 0.9570, precision: 0.7021, recall: 0.9900, f1: 0.8216, f2: 0.9150, tn: 1716, fp: 84, fn: 2, tp: 198, fpr: 0.0467 },
+        { threshold: 0.15, accuracy: 0.9660, precision: 0.7500, recall: 0.9900, f1: 0.8534, f2: 0.9305, tn: 1734, fp: 66, fn: 2, tp: 198, fpr: 0.0367 },
+        { threshold: 0.20, accuracy: 0.9685, precision: 0.7645, recall: 0.9900, f1: 0.8627, f2: 0.9348, tn: 1739, fp: 61, fn: 2, tp: 198, fpr: 0.0339 },
+        { threshold: 0.25, accuracy: 0.9710, precision: 0.7795, recall: 0.9900, f1: 0.8722, f2: 0.9393, tn: 1744, fp: 56, fn: 2, tp: 198, fpr: 0.0311 },
+        { threshold: 0.30, accuracy: 0.9740, precision: 0.7984, recall: 0.9900, f1: 0.8839, f2: 0.9447, tn: 1750, fp: 50, fn: 2, tp: 198, fpr: 0.0278 },
+        { threshold: 0.35, accuracy: 0.9785, precision: 0.8285, recall: 0.9900, f1: 0.9021, f2: 0.9528, tn: 1759, fp: 41, fn: 2, tp: 198, fpr: 0.0228 },
+        { threshold: 0.40, accuracy: 0.9805, precision: 0.8455, recall: 0.9850, f1: 0.9099, f2: 0.9535, tn: 1764, fp: 36, fn: 3, tp: 197, fpr: 0.0200 },
+        { threshold: 0.42, accuracy: 0.9805, precision: 0.8455, recall: 0.9850, f1: 0.9099, f2: 0.9535, tn: 1764, fp: 36, fn: 3, tp: 197, fpr: 0.0200 },
+        { threshold: 0.45, accuracy: 0.9820, precision: 0.8628, recall: 0.9750, f1: 0.9155, f2: 0.9503, tn: 1769, fp: 31, fn: 5, tp: 195, fpr: 0.0172 },
+        { threshold: 0.50, accuracy: 0.9830, precision: 0.8739, recall: 0.9700, f1: 0.9194, f2: 0.9491, tn: 1772, fp: 28, fn: 6, tp: 194, fpr: 0.0156 },
+        { threshold: 0.55, accuracy: 0.9825, precision: 0.8873, recall: 0.9450, f1: 0.9153, f2: 0.9329, tn: 1776, fp: 24, fn: 11, tp: 189, fpr: 0.0133 },
+        { threshold: 0.60, accuracy: 0.9815, precision: 0.8900, recall: 0.9300, f1: 0.9095, f2: 0.9217, tn: 1777, fp: 23, fn: 14, tp: 186, fpr: 0.0128 },
+        { threshold: 0.65, accuracy: 0.9820, precision: 0.9059, recall: 0.9150, f1: 0.9104, f2: 0.9132, tn: 1781, fp: 19, fn: 17, tp: 183, fpr: 0.0106 },
+        { threshold: 0.70, accuracy: 0.9845, precision: 0.9289, recall: 0.9150, f1: 0.9219, f2: 0.9178, tn: 1786, fp: 14, fn: 17, tp: 183, fpr: 0.0078 },
+        { threshold: 0.75, accuracy: 0.9845, precision: 0.9333, recall: 0.9100, f1: 0.9215, f2: 0.9146, tn: 1787, fp: 13, fn: 18, tp: 182, fpr: 0.0072 },
+        { threshold: 0.80, accuracy: 0.9815, precision: 0.9312, recall: 0.8800, f1: 0.9049, f2: 0.8898, tn: 1787, fp: 13, fn: 24, tp: 176, fpr: 0.0072 },
+        { threshold: 0.85, accuracy: 0.9780, precision: 0.9333, recall: 0.8400, f1: 0.8842, f2: 0.8571, tn: 1788, fp: 12, fn: 32, tp: 168, fpr: 0.0067 },
+        { threshold: 0.90, accuracy: 0.9755, precision: 0.9467, recall: 0.8000, f1: 0.8672, f2: 0.8256, tn: 1791, fp: 9, fn: 40, tp: 160, fpr: 0.0050 },
+        { threshold: 0.95, accuracy: 0.9740, precision: 0.9684, recall: 0.7650, f1: 0.8547, f2: 0.7985, tn: 1795, fp: 5, fn: 47, tp: 153, fpr: 0.0028 }
+    ];
+
+    let currentAnalyticsThreshold = 0.42;
+
+    function getMetricsForThreshold(th) {
+        th = Number(th);
+        if (Number.isNaN(th)) th = 0.42;
+
+        if (th <= THRESHOLD_BENCHMARKS[0].threshold) {
+            return { ...THRESHOLD_BENCHMARKS[0] };
+        }
+
+        const last = THRESHOLD_BENCHMARKS[THRESHOLD_BENCHMARKS.length - 1];
+        if (th >= last.threshold) {
+            return { ...last };
+        }
+
+        for (let i = 0; i < THRESHOLD_BENCHMARKS.length - 1; i++) {
+            const a = THRESHOLD_BENCHMARKS[i];
+            const b = THRESHOLD_BENCHMARKS[i + 1];
+
+            if (th >= a.threshold && th <= b.threshold) {
+                const span = b.threshold - a.threshold;
+                const ratio = span > 0 ? (th - a.threshold) / span : 0;
+
+                return {
+                    threshold: th,
+                    accuracy: a.accuracy + (b.accuracy - a.accuracy) * ratio,
+                    precision: a.precision + (b.precision - a.precision) * ratio,
+                    recall: a.recall + (b.recall - a.recall) * ratio,
+                    f1: a.f1 + (b.f1 - a.f1) * ratio,
+                    f2: a.f2 + (b.f2 - a.f2) * ratio,
+                    fpr: a.fpr + (b.fpr - a.fpr) * ratio,
+                    tn: Math.round(a.tn + (b.tn - a.tn) * ratio),
+                    fp: Math.round(a.fp + (b.fp - a.fp) * ratio),
+                    fn: Math.round(a.fn + (b.fn - a.fn) * ratio),
+                    tp: Math.round(a.tp + (b.tp - a.tp) * ratio)
+                };
+            }
+        }
+
+        return { ...THRESHOLD_BENCHMARKS[8] };
+    }
+
+    function applyAnalyticsThreshold(th, updateSlider = true) {
+        currentAnalyticsThreshold = Number(th);
+        const m = getMetricsForThreshold(currentAnalyticsThreshold);
+
+        // Update Slider
+        const slider = getElement("analyticsThresholdSlider");
+        if (slider && updateSlider) {
+            slider.value = currentAnalyticsThreshold;
+        }
+
+        // Update Display Text
+        setText("interactiveThresholdVal", currentAnalyticsThreshold.toFixed(2));
+
+        // Update Preset Buttons Active State
+        document.querySelectorAll("[data-preset-th]").forEach((btn) => {
+            const targetTh = Number(btn.dataset.presetTh);
+            btn.classList.toggle("active", Math.abs(targetTh - currentAnalyticsThreshold) < 0.015);
+        });
+
+        // Top Status Badge
+        const badge = getElement("analyticsThresholdBadge");
+        if (badge) {
+            if (Math.abs(currentAnalyticsThreshold - 0.42) < 0.015) {
+                badge.textContent = "OPTIMIZED THRESHOLD: 0.42";
+                badge.style.color = "var(--dash-emerald)";
+                badge.style.borderColor = "rgba(27, 197, 163, 0.35)";
+            } else {
+                badge.textContent = `SIMULATED THRESHOLD: ${currentAnalyticsThreshold.toFixed(2)}`;
+                badge.style.color = "var(--dash-copper)";
+                badge.style.borderColor = "rgba(217, 155, 98, 0.35)";
+            }
+        }
+
+        // Top KPI Cards
+        setText("analyticsKpiAccuracy", `${(m.accuracy * 100).toFixed(2)}%`);
+        setText("analyticsKpiAccuracyDesc", `${(m.tn + m.tp).toLocaleString()} of 2,000 correctly classified`);
+
+        setText("analyticsKpiRecall", `${(m.recall * 100).toFixed(2)}%`);
+        setText("analyticsKpiRecallDesc", `${m.tp} / 200 Caught · ${m.fn} Missed`);
+
+        setText("analyticsKpiPrecision", `${(m.precision * 100).toFixed(2)}%`);
+        setText("analyticsKpiPrecisionDesc", `${m.fp} False Positives out of 1,800 normal`);
+
+        setText("analyticsKpiF2Desc", `PR-AUC: 0.9712 · Peak F2: ${m.f2.toFixed(4)}`);
+
+        // ROC Curve Operating Point Update
+        // Origin: X = 65, Y = 285; Width = 520, Height = 250
+        const rocX = 65 + m.fpr * 520;
+        const rocY = 285 - m.recall * 250;
+
+        const rocDot = getElement("rocOperatingDot");
+        const rocPulse = getElement("rocOperatingPulse");
+        const rocGuideX = getElement("rocGuideX");
+        const rocGuideY = getElement("rocGuideY");
+        const rocCalloutTitle = getElement("rocCalloutTitle");
+        const rocCalloutDesc = getElement("rocCalloutDesc");
+
+        if (rocDot) {
+            rocDot.setAttribute("cx", String(rocX));
+            rocDot.setAttribute("cy", String(rocY));
+        }
+        if (rocPulse) {
+            rocPulse.setAttribute("cx", String(rocX));
+            rocPulse.setAttribute("cy", String(rocY));
+        }
+        if (rocGuideX) {
+            rocGuideX.setAttribute("x1", String(rocX));
+            rocGuideX.setAttribute("y1", String(rocY));
+            rocGuideX.setAttribute("x2", String(rocX));
+        }
+        if (rocGuideY) {
+            rocGuideY.setAttribute("x1", String(rocX));
+            rocGuideY.setAttribute("y1", String(rocY));
+            rocGuideY.setAttribute("y2", String(rocY));
+        }
+        if (rocCalloutTitle) {
+            rocCalloutTitle.textContent = Math.abs(currentAnalyticsThreshold - 0.42) < 0.015
+                ? "★ OPTIMAL POINT: THRESHOLD 0.42"
+                : `OPERATING POINT: THRESHOLD ${currentAnalyticsThreshold.toFixed(2)}`;
+        }
+        if (rocCalloutDesc) {
+            rocCalloutDesc.textContent = `Recall (TPR): ${(m.recall * 100).toFixed(1)}% · FPR: ${(m.fpr * 100).toFixed(2)}%`;
+        }
+
+        // Precision-Recall Curve Operating Point Update
+        const prX = 65 + m.recall * 520;
+        const prY = 285 - m.precision * 250;
+
+        const prDot = getElement("prOperatingDot");
+        const prPulse = getElement("prOperatingPulse");
+        const prGuideX = getElement("prGuideX");
+        const prGuideY = getElement("prGuideY");
+        const prCalloutTitle = getElement("prCalloutTitle");
+        const prCalloutDesc = getElement("prCalloutDesc");
+
+        if (prDot) {
+            prDot.setAttribute("cx", String(prX));
+            prDot.setAttribute("cy", String(prY));
+        }
+        if (prPulse) {
+            prPulse.setAttribute("cx", String(prX));
+            prPulse.setAttribute("cy", String(prY));
+        }
+        if (prGuideX) {
+            prGuideX.setAttribute("x1", String(prX));
+            prGuideX.setAttribute("y1", String(prY));
+            prGuideX.setAttribute("x2", String(prX));
+        }
+        if (prGuideY) {
+            prGuideY.setAttribute("x1", String(prX));
+            prGuideY.setAttribute("y1", String(prY));
+            prGuideY.setAttribute("y2", String(prY));
+        }
+        if (prCalloutTitle) {
+            prCalloutTitle.textContent = Math.abs(currentAnalyticsThreshold - 0.42) < 0.015
+                ? "★ CALIBRATED POINT: THRESHOLD 0.42"
+                : `SIMULATED POINT: THRESHOLD ${currentAnalyticsThreshold.toFixed(2)}`;
+        }
+        if (prCalloutDesc) {
+            prCalloutDesc.textContent = `Precision: ${(m.precision * 100).toFixed(1)}% · Recall: ${(m.recall * 100).toFixed(1)}%`;
+        }
+
+        // Threshold Tuning Curve Update
+        const thCursorX = 65 + currentAnalyticsThreshold * 520;
+        const thYRecall = 285 - Math.max(0, m.recall - 0.50) * 500;
+        const thYPrecision = 285 - Math.max(0, m.precision - 0.50) * 500;
+        const thYF2 = 285 - Math.max(0, m.f2 - 0.50) * 500;
+
+        const thLine = getElement("thCursorLine");
+        const thDotRec = getElement("thRecallDot");
+        const thDotPrec = getElement("thPrecisionDot");
+        const thDotF2 = getElement("thF2Dot");
+        const thCallTitle = getElement("thCalloutTitle");
+        const thCallDesc = getElement("thCalloutDesc");
+
+        if (thLine) {
+            thLine.setAttribute("x1", String(thCursorX));
+            thLine.setAttribute("x2", String(thCursorX));
+        }
+        if (thDotRec) {
+            thDotRec.setAttribute("cx", String(thCursorX));
+            thDotRec.setAttribute("cy", String(thYRecall));
+        }
+        if (thDotPrec) {
+            thDotPrec.setAttribute("cx", String(thCursorX));
+            thDotPrec.setAttribute("cy", String(thYPrecision));
+        }
+        if (thDotF2) {
+            thDotF2.setAttribute("cx", String(thCursorX));
+            thDotF2.setAttribute("cy", String(thYF2));
+        }
+        if (thCallTitle) {
+            thCallTitle.textContent = Math.abs(currentAnalyticsThreshold - 0.42) < 0.015
+                ? "★ PEAK F2 THRESHOLD: 0.42"
+                : `SELECTED THRESHOLD: ${currentAnalyticsThreshold.toFixed(2)}`;
+        }
+        if (thCallDesc) {
+            thCallDesc.textContent = `F2: ${m.f2.toFixed(4)} · Caught: ${m.tp}/200 · Missed: ${m.fn} Frauds · FP: ${m.fp}`;
+        }
+
+        // Confusion Matrix Values Update
+        setText("cmTnCount", m.tn.toLocaleString());
+        setText("cmFpCount", m.fp.toLocaleString());
+        setText("cmFnCount", m.fn.toLocaleString());
+        setText("cmTpCount", m.tp.toLocaleString());
+
+        setText("cmTnPct", `${((m.tn / 1800) * 100).toFixed(1)}% of Normal · Legitimate Approved`);
+        setText("cmFpPct", `${((m.fp / 1800) * 100).toFixed(1)}% False Alarms (${m.fp} of 1,800)`);
+        setText("cmFnPct", `${((m.fn / 200) * 100).toFixed(1)}% Missed (${m.fn} of 200 Frauds)`);
+        setText("cmTpPct", `${((m.tp / 200) * 100).toFixed(1)}% Caught (${m.tp} of 200 Frauds)`);
+
+        setText("cmSummarySpecificity", `${((m.tn / 1800) * 100).toFixed(2)}%`);
+        setText("cmSummaryRecall", `${(m.recall * 100).toFixed(2)}%`);
+        setText("cmSummaryPrecision", `${(m.precision * 100).toFixed(2)}%`);
+        setText("cmSummaryAccuracy", `${(m.accuracy * 100).toFixed(2)}%`);
+
+        // Financial Impact Callout
+        const impTitle = getElement("analyticsImpactTitle");
+        const impDesc = getElement("analyticsImpactDesc");
+        if (impTitle && impDesc) {
+            if (Math.abs(currentAnalyticsThreshold - 0.42) < 0.015) {
+                impTitle.textContent = "50% Reduction in Undetected Fraud Losses";
+                impDesc.textContent = "Calibrating to threshold 0.42 intercepts 3 additional high-value fraud transactions (197 caught vs. 194 at 0.50) with minimal review overhead (+8 FP in 1,800 normal cases).";
+            } else if (currentAnalyticsThreshold < 0.42) {
+                impTitle.textContent = `High-Sensitivity Catch Mode (Threshold ${currentAnalyticsThreshold.toFixed(2)})`;
+                impDesc.textContent = `Prioritizing maximum safety (${m.tp} of 200 frauds intercepted), but increases verification overhead with ${m.fp} false positive alerts.`;
+            } else {
+                impTitle.textContent = `Conservative Cut-Off Mode (Threshold ${currentAnalyticsThreshold.toFixed(2)})`;
+                impDesc.textContent = `Minimizes false alarms (${m.fp} FP), but allows ${m.fn} fraudulent transactions to slip through undetected, risking significant direct financial loss.`;
+            }
+        }
+    }
+
+    function setupGraphHoverInteraction(svgId, overlayId, hoverGroupId, onHover) {
+        const svg = getElement(svgId);
+        const overlay = getElement(overlayId);
+        const hoverGroup = getElement(hoverGroupId);
+
+        if (!svg || !overlay || !hoverGroup) return;
+
+        overlay.addEventListener("mousemove", (e) => {
+            const rect = svg.getBoundingClientRect();
+            const relX = (e.clientX - rect.left) * (620 / rect.width);
+            const relY = (e.clientY - rect.top) * (340 / rect.height);
+
+            if (relX >= 65 && relX <= 585 && relY >= 35 && relY <= 285) {
+                hoverGroup.style.display = "inline";
+                onHover(relX, relY);
+            } else {
+                hoverGroup.style.display = "none";
+            }
+        });
+
+        overlay.addEventListener("mouseleave", () => {
+            hoverGroup.style.display = "none";
+        });
+    }
+
+    function initializeAnalyticsGraphs() {
+        const slider = getElement("analyticsThresholdSlider");
+        if (slider) {
+            slider.addEventListener("input", (e) => {
+                applyAnalyticsThreshold(e.target.value, false);
+            });
+        }
+
+        // Preset buttons
+        document.querySelectorAll("[data-preset-th]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                applyAnalyticsThreshold(Number(btn.dataset.presetTh), true);
+            });
+        });
+
+        // Setup ROC Hover
+        setupGraphHoverInteraction("rocSvg", "rocInteractiveOverlay", "rocHoverGroup", (x) => {
+            const fpr = Math.max(0, Math.min(1, (x - 65) / 520));
+            const m = THRESHOLD_BENCHMARKS.find((row) => row.fpr >= fpr) || THRESHOLD_BENCHMARKS[0];
+
+            const line = getElement("rocHoverLineX");
+            const dot = getElement("rocHoverDot");
+            const box = getElement("rocHoverBox");
+            const t1 = getElement("rocHoverText1");
+            const t2 = getElement("rocHoverText2");
+
+            const dotY = 285 - m.recall * 250;
+            if (line) {
+                line.setAttribute("x1", String(x));
+                line.setAttribute("x2", String(x));
+            }
+            if (dot) {
+                dot.setAttribute("cx", String(x));
+                dot.setAttribute("cy", String(dotY));
+            }
+            if (box) {
+                const boxX = x > 440 ? x - 150 : x + 10;
+                box.setAttribute("transform", `translate(${boxX}, ${Math.max(40, dotY - 20)})`);
+            }
+            if (t1) t1.textContent = `FPR: ${(fpr * 100).toFixed(1)}%`;
+            if (t2) t2.textContent = `Recall: ${(m.recall * 100).toFixed(1)}%`;
+        });
+
+        // Setup PR Hover
+        setupGraphHoverInteraction("prSvg", "prInteractiveOverlay", "prHoverGroup", (x) => {
+            const recall = Math.max(0, Math.min(1, (x - 65) / 520));
+            const m = THRESHOLD_BENCHMARKS.find((row) => row.recall <= recall) || THRESHOLD_BENCHMARKS[THRESHOLD_BENCHMARKS.length - 1];
+
+            const line = getElement("prHoverLineX");
+            const dot = getElement("prHoverDot");
+            const box = getElement("prHoverBox");
+            const t1 = getElement("prHoverText1");
+            const t2 = getElement("prHoverText2");
+
+            const dotY = 285 - m.precision * 250;
+            if (line) {
+                line.setAttribute("x1", String(x));
+                line.setAttribute("x2", String(x));
+            }
+            if (dot) {
+                dot.setAttribute("cx", String(x));
+                dot.setAttribute("cy", String(dotY));
+            }
+            if (box) {
+                const boxX = x > 440 ? x - 150 : x + 10;
+                box.setAttribute("transform", `translate(${boxX}, ${Math.max(40, dotY - 20)})`);
+            }
+            if (t1) t1.textContent = `Recall: ${(recall * 100).toFixed(1)}%`;
+            if (t2) t2.textContent = `Precision: ${(m.precision * 100).toFixed(1)}%`;
+        });
+
+        // Setup Threshold Hover & Click
+        setupGraphHoverInteraction("thSvg", "thInteractiveOverlay", "thHoverGroup", (x) => {
+            const th = Math.max(0.05, Math.min(0.95, (x - 65) / 520));
+            const m = getMetricsForThreshold(th);
+
+            const line = getElement("thHoverLine");
+            const box = getElement("thHoverBox");
+            const t1 = getElement("thHoverText1");
+            const t2 = getElement("thHoverText2");
+            const t3 = getElement("thHoverText3");
+
+            if (line) {
+                line.setAttribute("x1", String(x));
+                line.setAttribute("x2", String(x));
+            }
+            if (box) {
+                const boxX = x > 430 ? x - 165 : x + 10;
+                box.setAttribute("transform", `translate(${boxX}, 60)`);
+            }
+            if (t1) t1.textContent = `Threshold: ${th.toFixed(2)}`;
+            if (t2) t2.textContent = `Recall: ${(m.recall * 100).toFixed(1)}%`;
+            if (t3) t3.textContent = `Prec: ${(m.precision * 100).toFixed(1)}% · F2: ${m.f2.toFixed(4)}`;
+        });
+
+        // Click on Threshold Curve directly sets threshold
+        const thOverlay = getElement("thInteractiveOverlay");
+        if (thOverlay) {
+            thOverlay.addEventListener("click", (e) => {
+                const rect = getElement("thSvg").getBoundingClientRect();
+                const relX = (e.clientX - rect.left) * (620 / rect.width);
+                if (relX >= 65 && relX <= 585) {
+                    const th = Math.max(0.05, Math.min(0.95, (relX - 65) / 520));
+                    applyAnalyticsThreshold(th, true);
+                }
+            });
+        }
+
+        // Clickable Confusion Matrix Cells
+        const CM_DESCRIPTIONS = {
+            tn: {
+                title: "True Negatives (TN) · Legitimate Transactions Approved",
+                desc: "1,764 normal banking activities correctly processed without triggering false alarm holds. Ensures friction-free customer experience for 98.0% of genuine users."
+            },
+            fp: {
+                title: "False Positives (FP) · Low-Risk Verification Alarms",
+                desc: "Only 36 normal transactions flagged for analyst security review. Keeps investigator caseload minimal (2.0% false alarm rate) while ensuring high-fidelity surveillance."
+            },
+            fn: {
+                title: "False Negatives (FN) · Undetected Frauds (Minimized)",
+                desc: "Only 3 fraudulent transactions slipped past the model. Optimized threshold 0.42 successfully cut missed fraud incidents by 50% down from 6 at default threshold."
+            },
+            tp: {
+                title: "True Positives (TP) · Intercepted Fraudulent Attacks",
+                desc: "197 confirmed fraud attempts intercepted and halted before fund disbursement. High-risk vectors (wire transfers, night logins) flagged with 98.5% recall."
+            }
+        };
+
+        document.querySelectorAll("[data-cm-type]").forEach((cell) => {
+            cell.addEventListener("click", () => {
+                document.querySelectorAll("[data-cm-type]").forEach((c) => c.classList.remove("active-cell"));
+                cell.classList.add("active-cell");
+
+                const type = cell.dataset.cmType;
+                const info = CM_DESCRIPTIONS[type];
+                const drawer = getElement("cmCellInspector");
+                const title = getElement("cmInspectorTitle");
+                const desc = getElement("cmInspectorDesc");
+
+                if (drawer && info) {
+                    drawer.style.display = "block";
+                    if (title) title.textContent = info.title;
+                    if (desc) desc.textContent = info.desc;
+                }
+            });
+        });
+
+        getElement("cmInspectorClose")?.addEventListener("click", () => {
+            const drawer = getElement("cmCellInspector");
+            if (drawer) drawer.style.display = "none";
+            document.querySelectorAll("[data-cm-type]").forEach((c) => c.classList.remove("active-cell"));
+        });
+
+        // Initialize at 0.42
+        applyAnalyticsThreshold(0.42, true);
+    }
+
+    function renderAnalyticsGraphs() {
+        applyAnalyticsThreshold(currentAnalyticsThreshold, true);
+    }
+
+    function initializeThemeToggle() {
+        const THEME_KEY = "fraudguard_theme";
+        const toggleBtn = getElement("themeToggleBtn");
+        const toggleIcon = getElement("themeToggleIcon");
+        const toggleLabel = getElement("themeToggleLabel");
+
+        const AVAILABLE_THEMES = [
+            { id: "pearl-coral",  name: "Pearl Coral",   icon: "🪸", badge: "Warm FinTech Light" },
+            { id: "arctic-mint",  name: "Arctic Mint",   icon: "🌿", badge: "Fresh Mint Light" },
+            { id: "lavender-ice", name: "Lavender Ice",  icon: "🪻", badge: "Premium Violet Light" },
+            { id: "glacier-blue", name: "Glacier Blue",  icon: "🧊", badge: "Ocean Glacier Light" },
+            { id: "dark",         name: "Charcoal Dark", icon: "🌙", badge: "Charcoal Dark" }
+        ];
+
+        function resolveTheme(rawId) {
+            if (!rawId || rawId === "light") return AVAILABLE_THEMES[0];
+            const match = AVAILABLE_THEMES.find(t => t.id === rawId);
+            return match || AVAILABLE_THEMES[0];
+        }
+
+        function updateThemeUI(themeId) {
+            const theme = resolveTheme(themeId);
+            document.documentElement.setAttribute("data-theme", theme.id);
+            if (document.body) {
+                document.body.setAttribute("data-theme", theme.id);
+            }
+
+            const currentIndex = AVAILABLE_THEMES.findIndex(t => t.id === theme.id);
+            const nextTheme = AVAILABLE_THEMES[(currentIndex + 1) % AVAILABLE_THEMES.length];
+
+            if (toggleIcon) {
+                toggleIcon.textContent = theme.icon;
+            }
+            if (toggleLabel) {
+                toggleLabel.textContent = theme.name;
+            }
+            if (toggleBtn) {
+                toggleBtn.setAttribute(
+                    "title",
+                    `Current Theme: ${theme.name} (${theme.badge}). Click to switch to ${nextTheme.name} ${nextTheme.icon}`
+                );
+                toggleBtn.setAttribute("aria-label", `Current theme ${theme.name}. Switch to ${nextTheme.name}`);
+            }
+
+            // Refresh charts if rendered
+            if (typeof renderAnalyticsGraphs === "function") {
+                renderAnalyticsGraphs();
+            }
+        }
+
+        const savedTheme = localStorage.getItem(THEME_KEY) || "pearl-coral";
+        updateThemeUI(savedTheme);
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener("click", () => {
+                const activeId = document.documentElement.getAttribute("data-theme") || "pearl-coral";
+                const currentTheme = resolveTheme(activeId);
+                const currentIndex = AVAILABLE_THEMES.findIndex(t => t.id === currentTheme.id);
+                const nextTheme = AVAILABLE_THEMES[(currentIndex + 1) % AVAILABLE_THEMES.length];
+
+                localStorage.setItem(THEME_KEY, nextTheme.id);
+                updateThemeUI(nextTheme.id);
+            });
+        }
+    }
+
+
+    // ========================================================
+    // 20. INITIALIZATION
+    // ========================================================
+
+    async function initializeDashboard() {
+        // The HTML must load api.js before dashboard.js.
+        if (!API) {
+            console.error(
+                "FraudAPI is unavailable. Check the script order."
+            );
+
+            showMessage(
+                "The API client could not be loaded. Refresh the page.",
+                "error"
+            );
+
+            return;
+        }
+
+        if (!requireAuthentication()) {
+            return;
+        }
+
+        initializeThemeToggle();
+        initializeDateAndFooter();
+        initializeUserInformation();
+
+        initializeNavigation();
+        initializeAlertActions();
+        initializeTransactionForm();
+        initializeBatchAnalysis();
+        initializeRefreshButtons();
+        initializeAnalyticsGraphs();
+
+        navigateTo("overview");
+
+        await loadDashboardData();
+    }
+
+
+    // ========================================================
+    // 21. START APPLICATION
+    // ========================================================
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        initializeDashboard,
+        { once: true }
+    );
 
 })();

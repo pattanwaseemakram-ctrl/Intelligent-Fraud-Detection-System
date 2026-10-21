@@ -1,0 +1,2669 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pearl-coral">
+<head>
+    <meta charset="UTF-8">
+    <script>
+        (function() {
+            let saved = localStorage.getItem("fraudguard_theme") || "pearl-coral";
+            if (saved === "light") saved = "pearl-coral";
+            document.documentElement.setAttribute("data-theme", saved);
+        })();
+    </script>
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Financial Fraud Detection System — Monitor transactions, investigate suspicious activity, and manage fraud alerts."
+    >
+
+    <meta name="theme-color" content="#0B1110">
+
+    <title>Dashboard | Financial Fraud Detection</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="css/common.css">
+
+    <!-- Dashboard Styles -->
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+
+<body>
+
+<div class="dashboard-app" id="dashboardApp">
+
+    <!-- =================================================
+         SIDEBAR
+    ================================================== -->
+
+    <aside
+        class="dashboard-sidebar"
+        id="dashboardSidebar"
+        aria-label="Dashboard navigation"
+    >
+
+        <!-- Brand -->
+
+        <a
+            href="landing.html"
+            class="dashboard-brand"
+            aria-label="Financial Fraud Detection home"
+        >
+            <span class="dashboard-brand-icon" aria-hidden="true">
+                <svg
+                    width="25"
+                    height="25"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                >
+                    <path
+                        d="M12 2.8L20 6V11.8C20 17 16.5 20.3 12 21.5C7.5 20.3 4 17 4 11.8V6L12 2.8Z"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linejoin="round"
+                    />
+
+                    <path
+                        d="M8.5 12.1L10.8 14.4L15.7 9.5"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                </svg>
+            </span>
+
+            <span class="dashboard-brand-copy">
+                <span class="dashboard-brand-name">
+                    FRAUD<span>GUARD</span>
+                </span>
+
+                <span class="dashboard-brand-caption">
+                    INTELLIGENCE PLATFORM
+                </span>
+            </span>
+        </a>
+
+
+        <!-- Workspace -->
+
+        <div class="sidebar-section-label">
+            WORKSPACE
+        </div>
+
+
+        <!-- Navigation -->
+
+        <nav class="dashboard-navigation">
+
+            <button
+                class="dashboard-nav-item active"
+                type="button"
+                data-nav="overview"
+                aria-current="page"
+            >
+                <span class="nav-icon" aria-hidden="true">
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                    >
+                        <rect
+                            x="3"
+                            y="3"
+                            width="7"
+                            height="8"
+                            rx="1.5"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                        />
+
+                        <rect
+                            x="14"
+                            y="3"
+                            width="7"
+                            height="5"
+                            rx="1.5"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                        />
+
+                        <rect
+                            x="14"
+                            y="11"
+                            width="7"
+                            height="10"
+                            rx="1.5"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                        />
+
+                        <rect
+                            x="3"
+                            y="14"
+                            width="7"
+                            height="7"
+                            rx="1.5"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                        />
+                    </svg>
+                </span>
+
+                <span>Overview</span>
+
+                <span class="nav-indicator"></span>
+            </button>
+
+
+            <button
+                class="dashboard-nav-item"
+                type="button"
+                data-nav="alerts"
+            >
+                <span class="nav-icon" aria-hidden="true">
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                    >
+                        <path
+                            d="M18 8A6 6 0 0 0 6 8C6 15 3 15 3 17H21C21 15 18 15 18 8Z"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+
+                        <path
+                            d="M10 21H14"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                        />
+                    </svg>
+                </span>
+
+                <span>Alert Management</span>
+
+                <span
+                    class="nav-count"
+                    id="sidebarAlertCount"
+                >—</span>
+            </button>
+
+
+            <button
+                class="dashboard-nav-item"
+                type="button"
+                data-nav="prediction"
+            >
+                <span class="nav-icon" aria-hidden="true">
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                    >
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="9"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                        />
+
+                        <path
+                            d="M12 7V12L15.5 14"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+
+                        <path
+                            d="M8 3.8L6.5 2.5M16 3.8L17.5 2.5"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                        />
+                    </svg>
+                </span>
+
+                <span>Fraud Prediction</span>
+            </button>
+
+
+            <button
+                class="dashboard-nav-item"
+                type="button"
+                data-nav="analytics"
+            >
+                <span class="nav-icon" aria-hidden="true">
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                    >
+                        <path
+                            d="M3 3V21H21"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                        <path
+                            d="M7 16L12 11L16 15L21 8"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                        <circle cx="21" cy="8" r="1.5" fill="currentColor"/>
+                    </svg>
+                </span>
+
+                <span>Analytics & Graphs</span>
+            </button>
+
+        </nav>
+
+
+        <!-- Sidebar Bottom -->
+
+        <div class="sidebar-bottom">
+
+            <div class="sidebar-system-card">
+
+                <div class="sidebar-system-heading">
+                    <span class="system-pulse-dot"></span>
+
+                    <span>System Connection</span>
+                </div>
+
+                <div
+                    class="sidebar-system-status"
+                    id="sidebarSystemStatus"
+                    aria-live="polite"
+                >
+                    Checking services...
+                </div>
+
+                <div class="sidebar-system-caption">
+                    API · DATABASE · MODEL
+                </div>
+
+            </div>
+
+
+            <!-- Logged-in User -->
+
+            <div class="sidebar-user" id="sidebarUser">
+
+                <div
+                    class="sidebar-user-avatar"
+                    id="userInitials"
+                    aria-hidden="true"
+                >
+                    U
+                </div>
+
+                <div class="sidebar-user-info">
+
+                    <div
+                        class="sidebar-user-name"
+                        id="userName"
+                    >
+                        Authenticated User
+                    </div>
+
+                    <div
+                        class="sidebar-user-role"
+                        id="userRole"
+                    >
+                        Analyst
+                    </div>
+
+                </div>
+
+                <button
+                    class="sidebar-logout-button"
+                    id="logoutButton"
+                    type="button"
+                    aria-label="Sign out"
+                    title="Sign out"
+                >
+                    <svg
+                        width="19"
+                        height="19"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                    >
+                        <path
+                            d="M10 17L15 12L10 7M15 12H3"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+
+                        <path
+                            d="M12 3H19A2 2 0 0 1 21 5V19A2 2 0 0 1 19 21H12"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                </button>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =================================================
+         MAIN CONTENT
+    ================================================== -->
+
+    <main class="dashboard-main" id="dashboardMain">
+
+        <!-- Topbar -->
+
+        <header class="dashboard-topbar">
+
+            <div class="topbar-left">
+
+                <button
+                    class="mobile-sidebar-toggle"
+                    id="sidebarToggle"
+                    type="button"
+                    aria-label="Toggle navigation"
+                    aria-controls="dashboardSidebar"
+                    aria-expanded="false"
+                >
+                    <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                    >
+                        <path
+                            d="M4 6H20M4 12H20M4 18H20"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                        />
+                    </svg>
+                </button>
+
+
+                <div class="topbar-breadcrumb">
+                    <span>FraudGuard</span>
+
+                    <span class="breadcrumb-divider">/</span>
+
+                    <span
+                        id="breadcrumbCurrent"
+                        class="breadcrumb-current"
+                    >
+                        Overview
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="topbar-right">
+
+                <div class="topbar-date">
+                    <span
+                        class="topbar-date-icon"
+                        aria-hidden="true"
+                    >
+                        ◷
+                    </span>
+
+                    <span id="dashboardDate">
+                        Loading date...
+                    </span>
+                </div>
+
+
+                <div
+                    class="system-health-badge"
+                    id="systemHealthBadge"
+                    aria-live="polite"
+                >
+                    <span class="health-badge-dot"></span>
+
+                    <span id="systemHealthText">
+                        Checking status
+                    </span>
+                </div>
+
+                <button
+                    class="theme-toggle-btn"
+                    id="themeToggleBtn"
+                    type="button"
+                    aria-label="Toggle visual theme"
+                    title="Switch Theme (Click to cycle themes)"
+                >
+                    <span class="theme-toggle-icon" id="themeToggleIcon" aria-hidden="true">🪸</span>
+                    <span class="theme-toggle-label" id="themeToggleLabel">Pearl Coral</span>
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- Dashboard Page Content -->
+
+        <div class="dashboard-content">
+
+
+            <!-- Global Message -->
+
+            <div
+                class="dashboard-message"
+                id="dashboardMessage"
+                role="status"
+                aria-live="polite"
+            ></div>
+
+
+            <!-- =========================================
+                 VIEW 1: OVERVIEW
+            ========================================== -->
+
+            <section
+                class="dashboard-view active"
+                id="overviewView"
+                data-view-panel="overview"
+            >
+
+                <!-- Page Heading -->
+
+                <div class="dashboard-page-heading">
+
+                    <div>
+
+                        <div class="dashboard-eyebrow">
+                            RISK INTELLIGENCE
+                        </div>
+
+                        <h1 class="dashboard-page-title">
+                            Risk Overview<span>.</span>
+                        </h1>
+
+                        <p class="dashboard-page-description">
+                            Monitor suspicious transaction predictions
+                            and investigate alerts across your system.
+                        </p>
+
+                    </div>
+
+
+                    <div class="heading-actions">
+
+                        <button
+                            class="btn btn-secondary"
+                            id="refreshDashboardButton"
+                            type="button"
+                        >
+                            <svg
+                                width="17"
+                                height="17"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                            >
+                                <path
+                                    d="M20 7V3M20 7H16M20 7L16.5 10.5"
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+
+                                <path
+                                    d="M4 17V21M4 17H8M4 17L7.5 13.5"
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+
+                                <path
+                                    d="M5.5 9A7 7 0 0 1 17 5M18.5 15A7 7 0 0 1 7 19"
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                    stroke-linecap="round"
+                                />
+                            </svg>
+
+                            Refresh Data
+                        </button>
+
+                        <button
+                            class="btn btn-primary"
+                            type="button"
+                            data-open-view="prediction"
+                        >
+                            <span aria-hidden="true">+</span>
+
+                            Analyze Transaction
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- 4 Core KPI Stat Cards -->
+                <div class="dashboard-stats-grid">
+
+                    <!-- Total Flagged Alerts -->
+                    <article class="stat-card stat-card-copper">
+                        <div class="stat-card-top">
+                            <span class="stat-card-label">Total Flagged Alerts</span>
+                            <span class="stat-card-badge">LIVE DATABASE</span>
+                        </div>
+                        <div class="stat-card-value" id="statTotalAlerts">—</div>
+                        <div class="stat-card-footer">
+                            <span class="stat-card-footer-dot"></span>
+                            <span>All recorded fraud alerts</span>
+                        </div>
+                    </article>
+
+                    <!-- New Alerts (Pending Triage) -->
+                    <article class="stat-card stat-card-red">
+                        <div class="stat-card-top">
+                            <span class="stat-card-label">Pending Triage</span>
+                            <span class="stat-card-badge badge-urgent">ACTION REQUIRED</span>
+                        </div>
+                        <div class="stat-card-value" id="statNewAlerts">—</div>
+                        <div class="stat-card-footer">
+                            <span class="stat-card-footer-dot"></span>
+                            <span>Awaiting analyst review</span>
+                        </div>
+                    </article>
+
+                    <!-- Under Active Investigation -->
+                    <article class="stat-card stat-card-copper-light">
+                        <div class="stat-card-top">
+                            <span class="stat-card-label">Under Investigation</span>
+                            <span class="stat-card-badge">IN PROGRESS</span>
+                        </div>
+                        <div class="stat-card-value" id="statUnderReviewAlerts">—</div>
+                        <div class="stat-card-footer">
+                            <span class="stat-card-footer-dot"></span>
+                            <span>Active case investigations</span>
+                        </div>
+                    </article>
+
+                    <!-- Resolved & Cleared -->
+                    <article class="stat-card stat-card-green">
+                        <div class="stat-card-top">
+                            <span class="stat-card-label">Resolved & Cleared</span>
+                            <span class="stat-card-badge">CLOSED</span>
+                        </div>
+                        <div class="stat-card-value" id="statResolvedAlerts">—</div>
+                        <div class="stat-card-footer">
+                            <span class="stat-card-footer-dot"></span>
+                            <span>Marked safe or resolved</span>
+                        </div>
+                    </article>
+
+                </div>
+
+
+                <!-- Split Command Center Grid (62% Recent Alerts Feed, 38% Risk Telemetry) -->
+                <div class="overview-command-grid">
+
+                    <!-- Left: Recent Alerts Table -->
+                    <article class="dashboard-card recent-alerts-card">
+
+                        <div class="dashboard-card-header">
+                            <div>
+                                <span class="card-eyebrow">LIVE SURVEILLANCE FEED</span>
+                                <h3>Recent Flagged Transactions</h3>
+                                <p>Incoming predictions flagged for investigation review.</p>
+                            </div>
+
+                            <button
+                                class="text-action"
+                                type="button"
+                                data-open-view="alerts"
+                            >
+                                View all alerts →
+                            </button>
+                        </div>
+
+                        <div class="dashboard-table-wrapper">
+                            <table class="dashboard-table">
+                                <thead>
+                                    <tr>
+                                        <th>TRANSACTION</th>
+                                        <th>PREDICTION</th>
+                                        <th>PROBABILITY</th>
+                                        <th>RISK</th>
+                                        <th>STATUS</th>
+                                        <th>CREATED</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="recentAlertsBody">
+                                    <tr>
+                                        <td colspan="6" class="table-empty">
+                                            <span class="table-loading-indicator"></span>
+                                            Synchronizing live alerts...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="table-footer">
+                            <span id="recentAlertsCount">
+                                Loading alert records...
+                            </span>
+                            <span class="table-footer-source">
+                                SECURE POSTGRESQL LAYER
+                            </span>
+                        </div>
+
+                    </article>
+
+
+                    <!-- Right: Telemetry & Distribution Sidebar Column -->
+                    <div class="overview-telemetry-column">
+
+                        <!-- Investigation Queue -->
+                        <article class="dashboard-card telemetry-card">
+
+                            <div class="dashboard-card-header">
+                                <div>
+                                    <span class="card-eyebrow">CASE STATUS</span>
+                                    <h3>Investigation Queue</h3>
+                                </div>
+                                <span
+                                    class="card-menu-label"
+                                    id="alertDistributionTotal"
+                                >
+                                    Live
+                                </span>
+                            </div>
+
+                            <div
+                                class="distribution-chart"
+                                id="alertDistributionChart"
+                            >
+                                <div class="distribution-item">
+                                    <div class="distribution-item-heading">
+                                        <span class="distribution-label">
+                                            <span class="distribution-dot dot-new"></span>
+                                            New (Unassigned)
+                                        </span>
+                                        <span
+                                            class="distribution-count"
+                                            id="distributionNewCount"
+                                        >
+                                            —
+                                        </span>
+                                    </div>
+                                    <div class="distribution-track">
+                                        <div
+                                            class="distribution-fill fill-new"
+                                            id="overviewNewBar"
+                                            style="width: 0%"
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                <div class="distribution-item">
+                                    <div class="distribution-item-heading">
+                                        <span class="distribution-label">
+                                            <span class="distribution-dot dot-review"></span>
+                                            Under Active Review
+                                        </span>
+                                        <span
+                                            class="distribution-count"
+                                            id="distributionReviewCount"
+                                        >
+                                            —
+                                        </span>
+                                    </div>
+                                    <div class="distribution-track">
+                                        <div
+                                            class="distribution-fill fill-review"
+                                            id="overviewReviewBar"
+                                            style="width: 0%"
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                <div class="distribution-item">
+                                    <div class="distribution-item-heading">
+                                        <span class="distribution-label">
+                                            <span class="distribution-dot dot-resolved"></span>
+                                            Resolved & Cleared
+                                        </span>
+                                        <span
+                                            class="distribution-count"
+                                            id="distributionResolvedCount"
+                                        >
+                                            —
+                                        </span>
+                                    </div>
+                                    <div class="distribution-track">
+                                        <div
+                                            class="distribution-fill fill-resolved"
+                                            id="overviewResolvedBar"
+                                            style="width: 0%"
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </article>
+
+
+                        <!-- Risk Severity Breakdown -->
+                        <article class="dashboard-card telemetry-card">
+
+                            <div class="dashboard-card-header">
+                                <div>
+                                    <span class="card-eyebrow">THREAT PROFILE</span>
+                                    <h3>Risk Severity Breakdown</h3>
+                                </div>
+                                <span class="risk-chart-icon">
+                                    ◈
+                                </span>
+                            </div>
+
+                            <div class="risk-summary-grid">
+                                <div class="risk-summary-item risk-summary-high">
+                                    <div class="risk-summary-top">
+                                        <span class="risk-summary-dot"></span>
+                                        <span>High</span>
+                                    </div>
+                                    <div
+                                        class="risk-summary-value"
+                                        id="riskHighCount"
+                                    >
+                                        —
+                                    </div>
+                                    <div class="risk-summary-track">
+                                        <div
+                                            class="risk-summary-bar"
+                                            id="riskHighBar"
+                                            style="width: 0%"
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                <div class="risk-summary-item risk-summary-medium">
+                                    <div class="risk-summary-top">
+                                        <span class="risk-summary-dot"></span>
+                                        <span>Medium</span>
+                                    </div>
+                                    <div
+                                        class="risk-summary-value"
+                                        id="riskMediumCount"
+                                    >
+                                        —
+                                    </div>
+                                    <div class="risk-summary-track">
+                                        <div
+                                            class="risk-summary-bar"
+                                            id="riskMediumBar"
+                                            style="width: 0%"
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                <div class="risk-summary-item risk-summary-low">
+                                    <div class="risk-summary-top">
+                                        <span class="risk-summary-dot"></span>
+                                        <span>Low</span>
+                                    </div>
+                                    <div
+                                        class="risk-summary-value"
+                                        id="riskLowCount"
+                                    >
+                                        —
+                                    </div>
+                                    <div class="risk-summary-track">
+                                        <div
+                                            class="risk-summary-bar"
+                                            id="riskLowBar"
+                                            style="width: 0%"
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="telemetry-engine-strip">
+                                <div class="telemetry-engine-item">
+                                    <span>DETECTION ENGINE</span>
+                                    <strong>Calibrated Pipeline (0.42 Threshold)</strong>
+                                </div>
+                            </div>
+
+                        </article>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =========================================
+                 VIEW 2: ALERT MANAGEMENT
+            ========================================== -->
+
+            <section
+                class="dashboard-view"
+                id="alertsView"
+                data-view-panel="alerts"
+                hidden
+            >
+
+                <div class="dashboard-page-heading">
+
+                    <div>
+
+                        <div class="dashboard-eyebrow">
+                            INVESTIGATION CENTER
+                        </div>
+
+                        <h1 class="dashboard-page-title">
+                            Alert Management<span>.</span>
+                        </h1>
+
+                        <p class="dashboard-page-description">
+                            Review suspicious predictions, manage
+                            investigation status, and inspect risk details.
+                        </p>
+
+                    </div>
+
+
+                    <div class="heading-actions">
+
+                        <button
+                            class="btn btn-secondary"
+                            id="refreshAlertsButton"
+                            type="button"
+                        >
+                            ↻ Refresh Alerts
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Alert Summary -->
+
+                <div class="alert-management-summary">
+
+                    <div class="alert-summary-item">
+
+                        <span>Total Records</span>
+
+                        <strong id="alertsPageTotal">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="alert-summary-item">
+
+                        <span>New</span>
+
+                        <strong id="alertsPageNew">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="alert-summary-item">
+
+                        <span>Under Review</span>
+
+                        <strong id="alertsPageReview">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="alert-summary-item">
+
+                        <span>Resolved</span>
+
+                        <strong id="alertsPageResolved">
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Alert Filters -->
+
+                <article class="dashboard-card alert-management-card">
+
+                    <div class="alert-toolbar">
+
+                        <div class="alert-toolbar-heading">
+
+                            <h3>Transaction Alerts</h3>
+
+                            <p>
+                                Alerts generated by the fraud prediction service.
+                            </p>
+
+                        </div>
+
+
+                        <div class="alert-toolbar-controls">
+
+                            <label
+                                class="search-control"
+                                for="alertsSearchInput"
+                            >
+
+                                <svg
+                                    width="18"
+                                    height="18"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    aria-hidden="true"
+                                >
+                                    <circle
+                                        cx="10.5"
+                                        cy="10.5"
+                                        r="6.5"
+                                        stroke="currentColor"
+                                        stroke-width="1.7"
+                                    />
+
+                                    <path
+                                        d="M15.5 15.5L21 21"
+                                        stroke="currentColor"
+                                        stroke-width="1.7"
+                                        stroke-linecap="round"
+                                    />
+                                </svg>
+
+                                <input
+                                    type="search"
+                                    id="alertsSearchInput"
+                                    placeholder="Search transaction ID..."
+                                    autocomplete="off"
+                                >
+
+                            </label>
+
+
+                            <label
+                                class="filter-control"
+                                for="alertsStatusFilter"
+                            >
+
+                                <span class="visually-hidden">
+                                    Filter alerts by status
+                                </span>
+
+                                <select id="alertsStatusFilter">
+
+                                    <option value="">
+                                        All statuses
+                                    </option>
+
+                                    <option value="New">
+                                        New
+                                    </option>
+
+                                    <option value="Under Review">
+                                        Under Review
+                                    </option>
+
+                                    <option value="Resolved">
+                                        Resolved
+                                    </option>
+
+                                </select>
+
+                            </label>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="dashboard-table-wrapper">
+
+                        <table class="dashboard-table alert-management-table">
+
+                            <thead>
+
+                                <tr>
+                                    <th>ALERT ID</th>
+                                    <th>TRANSACTION ID</th>
+                                    <th>PROBABILITY</th>
+                                    <th>RISK SCORE</th>
+                                    <th>RISK LEVEL</th>
+                                    <th>STATUS</th>
+                                    <th>CREATED</th>
+                                    <th>ACTIONS</th>
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody id="alertsTableBody">
+
+                                <tr>
+                                    <td colspan="8" class="table-empty">
+                                        Loading alert records...
+                                    </td>
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+
+                    <div class="table-footer">
+
+                        <span id="alertsCountLabel">
+                            Waiting for alert data...
+                        </span>
+
+                        <span>
+                            Use the action menu to manage individual alerts.
+                        </span>
+
+                    </div>
+
+                </article>
+
+
+                <!-- Alert Details Panel -->
+
+                <article
+                    class="dashboard-card alert-details-card"
+                    id="alertDetailsPanel"
+                    hidden
+                >
+
+                    <div class="dashboard-card-header">
+
+                        <div>
+                            <h3>Alert Details</h3>
+
+                            <p>
+                                Selected alert information.
+                            </p>
+                        </div>
+
+                        <button
+                            class="btn btn-secondary"
+                            id="closeAlertDetailsButton"
+                            type="button"
+                        >
+                            Close
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="alert-details-content"
+                        id="alertDetailsContent"
+                    >
+                        Select an alert to see its details.
+                    </div>
+
+                </article>
+
+            </section>
+
+
+            <!-- =========================================
+                 VIEW 3: SINGLE TRANSACTION PREDICTION
+            ========================================== -->
+
+            <section
+                class="dashboard-view"
+                id="predictionView"
+                data-view-panel="prediction"
+                hidden
+            >
+
+                <div class="dashboard-page-heading">
+
+                    <div>
+
+                        <div class="dashboard-eyebrow">
+                            REAL-TIME INFERENCE
+                        </div>
+
+                        <h1 class="dashboard-page-title">
+                            Fraud Prediction<span>.</span>
+                        </h1>
+
+                    </div>
+
+                    <div class="prediction-threshold-banner">
+                        <span class="threshold-banner-icon">
+                            ◈
+                        </span>
+                        <div>
+                            <strong>Decision Threshold: 0.42</strong>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="prediction-layout-grid">
+
+
+                    <!-- Prediction Form -->
+
+                    <article class="dashboard-card prediction-form-card">
+
+                        <div class="dashboard-card-header">
+
+                            <div>
+
+                                <h3>Transaction Details</h3>
+
+                                <p>
+                                    Enter the details required by the API.
+                                </p>
+
+                            </div>
+
+                            <span class="form-required-note">
+                                * Required
+                            </span>
+
+                        </div>
+
+
+                                                <form
+                            id="transactionPredictionForm"
+                            class="dashboard-form"
+                        >
+
+                            <div class="prediction-columns-container">
+
+                                <!-- Column 1: Transaction Identity -->
+                                <div class="prediction-form-column">
+
+                                    <div class="form-section-heading">
+                                        <span class="form-section-number">01</span>
+                                        <div>
+                                            <h4>Transaction Identity</h4>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-column-fields">
+
+                                        <div class="form-group">
+                                            <label for="predictTransactionId">
+                                                Transaction ID *
+                                            </label>
+                                            <div class="input-clearable-wrapper">
+                                                <input
+                                                    type="text"
+                                                    id="predictTransactionId"
+                                                    name="transaction_id"
+                                                    placeholder="TX-2026-001"
+                                                    required
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="input-clear-btn"
+                                                    aria-label="Clear Transaction ID"
+                                                    title="Clear input"
+                                                    tabindex="-1"
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                        <line x1="2" y1="2" x2="10" y2="10"></line>
+                                                        <line x1="10" y1="2" x2="2" y2="10"></line>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="transactionTimestamp">
+                                                Transaction Timestamp *
+                                            </label>
+                                            <div class="input-clearable-wrapper">
+                                                <input
+                                                    type="datetime-local"
+                                                    id="transactionTimestamp"
+                                                    name="timestamp"
+                                                    required
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="input-clear-btn input-clear-btn-datetime"
+                                                    aria-label="Clear Transaction Timestamp"
+                                                    title="Clear input"
+                                                    tabindex="-1"
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                        <line x1="2" y1="2" x2="10" y2="10"></line>
+                                                        <line x1="10" y1="2" x2="2" y2="10"></line>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="senderAccountId">
+                                                Sender Account ID *
+                                            </label>
+                                            <div class="input-clearable-wrapper">
+                                                <input
+                                                    type="text"
+                                                    id="senderAccountId"
+                                                    name="sender_account_id"
+                                                    placeholder="ACC-001"
+                                                    required
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="input-clear-btn"
+                                                    aria-label="Clear Sender Account ID"
+                                                    title="Clear input"
+                                                    tabindex="-1"
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                        <line x1="2" y1="2" x2="10" y2="10"></line>
+                                                        <line x1="10" y1="2" x2="2" y2="10"></line>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="receiverAccountId">
+                                                Receiver Account ID *
+                                            </label>
+                                            <div class="input-clearable-wrapper">
+                                                <input
+                                                    type="text"
+                                                    id="receiverAccountId"
+                                                    name="receiver_account_id"
+                                                    placeholder="ACC-002"
+                                                    required
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="input-clear-btn"
+                                                    aria-label="Clear Receiver Account ID"
+                                                    title="Clear input"
+                                                    tabindex="-1"
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                        <line x1="2" y1="2" x2="10" y2="10"></line>
+                                                        <line x1="10" y1="2" x2="2" y2="10"></line>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- Column 2: Transaction Attributes -->
+                                <div class="prediction-form-column">
+
+                                    <div class="form-section-heading">
+                                        <span class="form-section-number">02</span>
+                                        <div>
+                                            <h4>Transaction Attributes</h4>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-column-fields">
+
+                                        <div class="form-group">
+                                            <label for="transactionAmount">
+                                                Transaction Amount *
+                                            </label>
+                                            <div class="input-with-prefix input-clearable-wrapper">
+                                                <span aria-hidden="true">₹</span>
+                                                <input
+                                                    type="number"
+                                                    id="transactionAmount"
+                                                    name="amount"
+                                                    placeholder="15000.00"
+                                                    min="0"
+                                                    step="0.01"
+                                                    required
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="input-clear-btn"
+                                                    aria-label="Clear Transaction Amount"
+                                                    title="Clear input"
+                                                    tabindex="-1"
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                        <line x1="2" y1="2" x2="10" y2="10"></line>
+                                                        <line x1="10" y1="2" x2="2" y2="10"></line>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="transactionType">
+                                                Transaction Type *
+                                            </label>
+                                            <select
+                                                id="transactionType"
+                                                name="type"
+                                                required
+                                            >
+                                                <option value="Transfer">Transfer</option>
+                                                <option value="Withdrawal">Withdrawal</option>
+                                                <option value="Deposit">Deposit</option>
+                                                <option value="Payment">Payment</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="accountBalance">
+                                                Account Balance *
+                                            </label>
+                                            <div class="input-with-prefix input-clearable-wrapper">
+                                                <span aria-hidden="true">₹</span>
+                                                <input
+                                                    type="number"
+                                                    id="accountBalance"
+                                                    name="account_balance"
+                                                    placeholder="25000.00"
+                                                    min="0"
+                                                    step="0.01"
+                                                    required
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="input-clear-btn"
+                                                    aria-label="Clear Account Balance"
+                                                    title="Clear input"
+                                                    tabindex="-1"
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                        <line x1="2" y1="2" x2="10" y2="10"></line>
+                                                        <line x1="10" y1="2" x2="2" y2="10"></line>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="spendingPatternDeviation">
+                                                Spending Pattern Deviation *
+                                            </label>
+                                            <div class="input-clearable-wrapper">
+                                                <input
+                                                    type="number"
+                                                    id="spendingPatternDeviation"
+                                                    name="spending_pattern_deviation"
+                                                    placeholder="0.02"
+                                                    min="0"
+                                                    step="0.01"
+                                                    required
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="input-clear-btn"
+                                                    aria-label="Clear Spending Pattern Deviation"
+                                                    title="Clear input"
+                                                    tabindex="-1"
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                        <line x1="2" y1="2" x2="10" y2="10"></line>
+                                                        <line x1="10" y1="2" x2="2" y2="10"></line>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- Column 3: Device & Location -->
+                                <div class="prediction-form-column">
+
+                                    <div class="form-section-heading">
+                                        <span class="form-section-number">03</span>
+                                        <div>
+                                            <h4>Device & Location</h4>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-column-fields">
+
+                                        <div class="form-group">
+                                            <label for="deviceId">
+                                                Device ID *
+                                            </label>
+                                            <div class="input-clearable-wrapper">
+                                                <input
+                                                    type="text"
+                                                    id="deviceId"
+                                                    name="device_id"
+                                                    placeholder="DEV-001"
+                                                    required
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="input-clear-btn"
+                                                    aria-label="Clear Device ID"
+                                                    title="Clear input"
+                                                    tabindex="-1"
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                        <line x1="2" y1="2" x2="10" y2="10"></line>
+                                                        <line x1="10" y1="2" x2="2" y2="10"></line>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="ipAddress">
+                                                IP Address *
+                                            </label>
+                                            <div class="input-clearable-wrapper">
+                                                <input
+                                                    type="text"
+                                                    id="ipAddress"
+                                                    name="ip_address"
+                                                    placeholder="192.0.2.10"
+                                                    required
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="input-clear-btn"
+                                                    aria-label="Clear IP Address"
+                                                    title="Clear input"
+                                                    tabindex="-1"
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                        <line x1="2" y1="2" x2="10" y2="10"></line>
+                                                        <line x1="10" y1="2" x2="2" y2="10"></line>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="transactionLocation">
+                                                Transaction Location *
+                                            </label>
+                                            <div class="input-clearable-wrapper">
+                                                <input
+                                                    type="text"
+                                                    id="transactionLocation"
+                                                    name="location"
+                                                    placeholder="New York"
+                                                    required
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="input-clear-btn"
+                                                    aria-label="Clear Transaction Location"
+                                                    title="Clear input"
+                                                    tabindex="-1"
+                                                >
+                                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                        <line x1="2" y1="2" x2="10" y2="10"></line>
+                                                        <line x1="10" y1="2" x2="2" y2="10"></line>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- Column 4: Risk Indicators -->
+                                <div class="prediction-form-column">
+
+                                    <div class="form-section-heading">
+                                        <span class="form-section-number">04</span>
+                                        <div>
+                                            <h4>Risk Indicators</h4>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-column-fields">
+
+                                        <div class="form-group">
+                                            <label for="userDeviceRecognition">
+                                                Recognized Device *
+                                            </label>
+                                            <select
+                                                id="userDeviceRecognition"
+                                                name="user_device_recognition"
+                                                required
+                                            >
+                                                <option value="1">Yes</option>
+                                                <option value="0">No</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="knownThreatFlag">
+                                                Known Threat Flag *
+                                            </label>
+                                            <select
+                                                id="knownThreatFlag"
+                                                name="known_threat_flag"
+                                                required
+                                            >
+                                                <option value="0">No</option>
+                                                <option value="1">Yes</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="loginLocationMatch">
+                                                Login Location Match *
+                                            </label>
+                                            <select
+                                                id="loginLocationMatch"
+                                                name="login_location_match"
+                                                required
+                                            >
+                                                <option value="1">Yes</option>
+                                                <option value="0">No</option>
+                                            </select>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- Form Actions -->
+                            <div class="prediction-form-actions">
+
+                                <button
+                                    class="btn btn-secondary"
+                                    type="reset"
+                                    id="resetPredictionFormButton"
+                                >
+                                    Reset Form
+                                </button>
+
+                                <button
+                                    class="btn btn-primary"
+                                    type="submit"
+                                    id="runPredictionButton"
+                                >
+                                    <span aria-hidden="true">✦</span>
+                                    <span id="runPredictionButtonText">
+                                        Run Fraud Analysis
+                                    </span>
+                                </button>
+
+                            </div>
+
+                        </form>
+
+                    </article>
+
+
+                    <!-- Prediction Results -->
+
+                    <aside class="prediction-result-column">
+
+                        <article
+                            class="dashboard-card prediction-result-card"
+                            id="predictionResult"
+                        >
+
+                            <div class="result-card-header">
+
+                                <div>
+                                    <span class="result-eyebrow">
+                                        MODEL OUTPUT
+                                    </span>
+
+                                    <h3>Prediction Result</h3>
+                                </div>
+
+                                <span class="result-header-icon">
+                                    ✦
+                                </span>
+
+                            </div>
+
+
+                            <div
+                                class="prediction-result-placeholder"
+                                id="predictionResultPlaceholder"
+                            >
+
+                                <div class="prediction-placeholder-orbit">
+
+                                    <div class="prediction-placeholder-core">
+                                        <svg
+                                            width="39"
+                                            height="39"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                        >
+                                            <path
+                                                d="M12 3L21 7V12C21 16.5 17 20 12 21C7 20 3 16.5 3 12V7L12 3Z"
+                                                stroke="currentColor"
+                                                stroke-width="1.5"
+                                                stroke-linejoin="round"
+                                            />
+
+                                            <path
+                                                d="M8.5 12H15.5M12 8.5V15.5"
+                                                stroke="currentColor"
+                                                stroke-width="1.5"
+                                                stroke-linecap="round"
+                                            />
+                                        </svg>
+                                    </div>
+
+                                </div>
+
+
+                                <h4>Ready for Analysis</h4>
+
+                                <p>
+                                    Submit a transaction to receive
+                                    a model-generated prediction,
+                                    probability, and risk classification.
+                                </p>
+
+                            </div>
+
+
+                            <div
+                                class="prediction-result-content"
+                                id="predictionResultContent"
+                                hidden
+                            >
+
+                                <div class="prediction-result-status">
+
+                                    <span class="result-status-label">
+                                        PREDICTION
+                                    </span>
+
+                                    <span
+                                        class="prediction-label"
+                                        id="predictionLabel"
+                                    >
+                                        —
+                                    </span>
+
+                                </div>
+
+
+                                <div class="prediction-probability-block">
+
+                                    <span>
+                                        Fraud Probability
+                                    </span>
+
+                                    <strong
+                                        id="predictionProbability"
+                                    >
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="prediction-probability-track">
+
+                                    <div
+                                        class="prediction-probability-fill"
+                                        id="predictionProbabilityBar"
+                                        style="width: 0%"
+                                    ></div>
+
+                                </div>
+
+
+                                <div class="prediction-result-metrics">
+
+                                    <div class="result-metric">
+
+                                        <span>Risk Score</span>
+
+                                        <strong
+                                            id="predictionRiskScore"
+                                        >
+                                            —
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="result-metric">
+
+                                        <span>Risk Level</span>
+
+                                        <strong
+                                            id="predictionRiskLevel"
+                                        >
+                                            —
+                                        </strong>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="result-divider"></div>
+
+
+                                <div class="prediction-result-reference">
+
+                                    <span>Transaction ID</span>
+
+                                    <strong
+                                        id="predictionTransactionId"
+                                    >
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                                <div
+                                    class="prediction-alert-note"
+                                    id="predictionAlertNote"
+                                ></div>
+
+
+                                <button
+                                    class="btn btn-secondary result-new-analysis"
+                                    type="button"
+                                    id="newPredictionButton"
+                                >
+                                    Analyze Another Transaction
+                                </button>
+
+                            </div>
+
+                        </article>
+
+
+                        <!-- Threshold Reference -->
+
+                        <article class="dashboard-card threshold-reference-card">
+
+                            <div class="dashboard-card-header">
+
+                                <div>
+                                    <h3>Decision Logic</h3>
+
+                                    <p>
+                                        Configured model decision threshold.
+                                    </p>
+                                </div>
+
+                            </div>
+
+
+                            <div class="decision-logic-list">
+
+                                <div class="decision-logic-item">
+
+                                    <span class="decision-logic-indicator logic-normal"></span>
+
+                                    <div>
+                                        <strong>Normal</strong>
+
+                                        <span>
+                                            Probability &lt; 0.42
+                                        </span>
+                                    </div>
+
+                                </div>
+
+
+                                <div class="decision-logic-item">
+
+                                    <span class="decision-logic-indicator logic-suspicious"></span>
+
+                                    <div>
+                                        <strong>Suspicious</strong>
+
+                                        <span>
+                                            Probability ≥ 0.42
+                                        </span>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="threshold-reference-note">
+                                The backend determines the prediction
+                                and risk level. This interface displays
+                                the returned result.
+                            </div>
+
+                        </article>
+
+                    </aside>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================================
+                 VIEW 4: ANALYTICS, KPIS & GRAPHS
+            ========================================== -->
+
+            <section
+                class="dashboard-view"
+                id="analyticsView"
+                data-view-panel="analytics"
+                hidden
+            >
+
+                <!-- Page Heading -->
+                <div class="dashboard-page-heading">
+                    <div>
+                        <div class="dashboard-eyebrow">
+                            MACHINE LEARNING EVALUATION & SURVEILLANCE
+                        </div>
+                        <h1 class="dashboard-page-title">
+                            Analytics, KPIs & Graphs<span>.</span>
+                        </h1>
+                        <p class="dashboard-page-description">
+                            Interactive machine learning evaluation benchmarks, ROC curve, Precision-Recall curve, confusion matrix heatmap, and dynamic decision threshold calibration.
+                        </p>
+                    </div>
+
+                    <div class="heading-actions">
+                        <span class="stat-card-badge">EVAL SET: 2,000 CASES</span>
+                        <span class="stat-card-badge" id="analyticsThresholdBadge" style="color: var(--dash-emerald); border-color: rgba(27, 197, 163, 0.35);">OPTIMIZED THRESHOLD: 0.42</span>
+                    </div>
+                </div>
+
+
+                <!-- 4 Performance KPI Cards -->
+                <div class="dashboard-stats-grid">
+
+                    <!-- KPI 1: Accuracy -->
+                    <article class="stat-card stat-card-green">
+                        <div class="stat-card-top">
+                            <span class="stat-card-label">Model Accuracy</span>
+                            <span class="stat-card-badge">TEST BENCHMARK</span>
+                        </div>
+                        <div class="stat-card-value" id="analyticsKpiAccuracy">98.05%</div>
+                        <div class="stat-card-footer">
+                            <span class="stat-card-footer-dot"></span>
+                            <span id="analyticsKpiAccuracyDesc">1,961 of 2,000 correctly classified</span>
+                        </div>
+                    </article>
+
+                    <!-- KPI 2: Recall / Catch Rate -->
+                    <article class="stat-card stat-card-copper">
+                        <div class="stat-card-top">
+                            <span class="stat-card-label">Fraud Detection Rate (Recall)</span>
+                            <span class="stat-card-badge badge-urgent">197 / 200 CAUGHT</span>
+                        </div>
+                        <div class="stat-card-value" id="analyticsKpiRecall">98.50%</div>
+                        <div class="stat-card-footer">
+                            <span class="stat-card-footer-dot"></span>
+                            <span id="analyticsKpiRecallDesc">Only 3 missed frauds (50% loss reduction)</span>
+                        </div>
+                    </article>
+
+                    <!-- KPI 3: Precision -->
+                    <article class="stat-card stat-card-copper-light">
+                        <div class="stat-card-top">
+                            <span class="stat-card-label">Model Precision</span>
+                            <span class="stat-card-badge">LOW FALSE ALARMS</span>
+                        </div>
+                        <div class="stat-card-value" id="analyticsKpiPrecision">84.55%</div>
+                        <div class="stat-card-footer">
+                            <span class="stat-card-footer-dot"></span>
+                            <span id="analyticsKpiPrecisionDesc">36 False Positives out of 1,800 normal</span>
+                        </div>
+                    </article>
+
+                    <!-- KPI 4: ROC-AUC -->
+                    <article class="stat-card stat-card-green">
+                        <div class="stat-card-top">
+                            <span class="stat-card-label">ROC-AUC Discrimination</span>
+                            <span class="stat-card-badge">SUPERIOR SEPARATION</span>
+                        </div>
+                        <div class="stat-card-value" id="analyticsKpiRoc">0.9967</div>
+                        <div class="stat-card-footer">
+                            <span class="stat-card-footer-dot"></span>
+                            <span id="analyticsKpiF2Desc">PR-AUC: 0.9712 · Peak F2: 0.9535</span>
+                        </div>
+                    </article>
+
+                </div>
+
+
+                <!-- Interactive Decision Threshold Controller Bar -->
+                <div class="threshold-interactive-bar">
+                    <div class="threshold-bar-left">
+                        <div class="threshold-bar-title">
+                            <span class="threshold-bar-icon">⚡</span>
+                            <div>
+                                <strong>Interactive Decision Threshold Controller</strong>
+                                <p>Drag slider or click presets to dynamically test tradeoffs across all graphs & confusion matrix in real-time.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="threshold-slider-group">
+                        <div class="threshold-slider-labels">
+                            <span>High Catch (0.05)</span>
+                            <span class="threshold-current-value">Active Cut-Off: <strong id="interactiveThresholdVal">0.42</strong></span>
+                            <span>Strict (0.95)</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="analyticsThresholdSlider"
+                            class="analytics-slider"
+                            min="0.05"
+                            max="0.95"
+                            step="0.01"
+                            value="0.42"
+                            aria-label="Interactive Decision Threshold Slider"
+                        >
+                    </div>
+
+                    <div class="threshold-presets-group">
+                        <span class="preset-label">PRESETS:</span>
+                        <button type="button" class="btn-preset active" data-preset-th="0.42" title="Optimal F2 Recall - Production Operating Point">★ Optimal (0.42)</button>
+                        <button type="button" class="btn-preset" data-preset-th="0.50" title="Standard 50/50 Probability Cut-Off">Default (0.50)</button>
+                        <button type="button" class="btn-preset" data-preset-th="0.30" title="High Sensitivity - 99% Fraud Catch">Sensitive (0.30)</button>
+                        <button type="button" class="btn-preset" data-preset-th="0.65" title="Strict - Fewer False Alarms">Strict (0.65)</button>
+                    </div>
+                </div>
+
+
+                <!-- Primary 2x2 Graphs Grid -->
+                <div class="analytics-graphs-grid">
+
+                    <!-- Graph 1: ROC Curve (Receiver Operating Characteristic) -->
+                    <article class="dashboard-card analytics-graph-card">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <span class="card-eyebrow">DISCRIMINATION METRIC</span>
+                                <h3>ROC Curve (Receiver Operating Characteristic)</h3>
+                                <p>False Positive Rate vs. True Positive Rate across all probability cut-offs. Hover graph for live coordinates.</p>
+                            </div>
+
+                            <div class="graph-legend">
+                                <span class="legend-item">
+                                    <span class="legend-color-box legend-volume"></span>
+                                    <span>Model (AUC = 0.9967)</span>
+                                </span>
+                                <span class="legend-item">
+                                    <span class="legend-color-box legend-baseline"></span>
+                                    <span>Random (0.50)</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="analytics-svg-wrapper">
+                            <svg class="analytics-ml-svg" id="rocSvg" viewBox="0 0 620 340" preserveAspectRatio="none" role="img" aria-label="ROC Curve Graph">
+                                <defs>
+                                    <linearGradient id="rocGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#1BC5A3" stop-opacity="0.28"/>
+                                        <stop offset="100%" stop-color="#1BC5A3" stop-opacity="0.02"/>
+                                    </linearGradient>
+                                </defs>
+
+                                <!-- Grid Lines & Coordinate Framework -->
+                                <line x1="65" y1="35" x2="585" y2="35" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="85" x2="585" y2="85" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="135" x2="585" y2="135" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="185" x2="585" y2="185" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="235" x2="585" y2="235" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="285" x2="585" y2="285" stroke="rgba(255,255,255,0.22)"/>
+
+                                <line x1="65" y1="35" x2="65" y2="285" stroke="rgba(255,255,255,0.22)"/>
+                                <line x1="169" y1="35" x2="169" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="273" y1="35" x2="273" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="377" y1="35" x2="377" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="481" y1="35" x2="481" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="585" y1="35" x2="585" y2="285" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
+
+                                <!-- Y Axis Numerical Ticks (TPR / Sensitivity) -->
+                                <text x="52" y="39" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">1.0</text>
+                                <text x="52" y="89" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.8</text>
+                                <text x="52" y="139" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.6</text>
+                                <text x="52" y="189" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.4</text>
+                                <text x="52" y="239" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.2</text>
+                                <text x="52" y="289" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.0</text>
+
+                                <!-- Y Axis Label Title -->
+                                <text transform="rotate(-90)" x="-160" y="16" fill="#A4B8A6" font-size="9.5" font-weight="700" letter-spacing="0.8" text-anchor="middle" font-family="'DM Mono', monospace">TRUE POSITIVE RATE (TPR / RECALL)</text>
+
+                                <!-- X Axis Numerical Ticks (FPR) -->
+                                <text x="65" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.0</text>
+                                <text x="169" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.2</text>
+                                <text x="273" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.4</text>
+                                <text x="377" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.6</text>
+                                <text x="481" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.8</text>
+                                <text x="585" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">1.0</text>
+
+                                <!-- X Axis Label Title -->
+                                <text x="325" y="327" fill="#A4B8A6" font-size="9.5" font-weight="700" letter-spacing="0.8" text-anchor="middle" font-family="'DM Mono', monospace">FALSE POSITIVE RATE (FPR = 1 - SPECIFICITY)</text>
+
+                                <!-- Random Classifier Diagonal (AUC = 0.50) -->
+                                <line x1="65" y1="285" x2="585" y2="35" stroke="#68766E" stroke-width="1.8" stroke-dasharray="6,6"/>
+
+                                <!-- ROC Shaded Area Under Curve -->
+                                <polygon points="65,285 66,93.8 67.6,85.0 69.2,57.5 71.8,48.8 73.1,42.5 75.4,38.8 79.6,37.5 95.7,37.5 117,36.3 169,35.5 325,35 585,35 585,285" fill="url(#rocGradient)"/>
+
+                                <!-- ROC Curve Line (AUC = 0.9967) -->
+                                <path d="M 65,285 L 66,93.8 L 67.6,85.0 L 69.2,57.5 L 71.8,48.8 L 73.1,42.5 L 75.4,38.8 L 79.6,37.5 L 95.7,37.5 L 117,36.3 L 169,35.5 L 325,35 L 585,35" fill="none" stroke="#1BC5A3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+                                <!-- Dynamic Operating Point Guides -->
+                                <line id="rocGuideX" x1="75.4" y1="38.8" x2="75.4" y2="285" stroke="#1BC5A3" stroke-width="1.4" stroke-dasharray="4,3" opacity="0.8"/>
+                                <line id="rocGuideY" x1="75.4" y1="38.8" x2="65" y2="38.8" stroke="#1BC5A3" stroke-width="1.4" stroke-dasharray="4,3" opacity="0.8"/>
+
+                                <!-- Operating Point Glowing Marker -->
+                                <circle id="rocOperatingPulse" cx="75.4" cy="38.8" r="9" fill="none" stroke="#1BC5A3" stroke-width="2" opacity="0.6"/>
+                                <circle id="rocOperatingDot" cx="75.4" cy="38.8" r="4.5" fill="#5FE2C7"/>
+
+                                <!-- Dynamic Callout Badge Annotation -->
+                                <g id="rocCalloutGroup" transform="translate(100, 58)">
+                                    <rect width="250" height="52" rx="6" fill="#0E1A16" stroke="#1BC5A3" stroke-width="1.3" opacity="0.96"/>
+                                    <text id="rocCalloutTitle" x="12" y="21" fill="#5FE2C7" font-size="10.5" font-weight="700" font-family="'DM Mono', monospace">★ OPTIMAL POINT: THRESHOLD 0.42</text>
+                                    <text id="rocCalloutDesc" x="12" y="39" fill="#C5D2C1" font-size="9.5" font-family="'DM Mono', monospace">Recall (TPR): 98.50% · FPR: 2.00%</text>
+                                </g>
+
+                                <!-- Interactive Hover Tooltip & Crosshair -->
+                                <g id="rocHoverGroup" style="display: none; pointer-events: none;">
+                                    <line id="rocHoverLineX" x1="0" y1="35" x2="0" y2="285" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" stroke-dasharray="3,3"/>
+                                    <circle id="rocHoverDot" cx="0" cy="0" r="5" fill="#5FE2C7" stroke="#0E1A16" stroke-width="1.5"/>
+                                    <g id="rocHoverBox">
+                                        <rect width="140" height="38" rx="4" fill="#091410" stroke="#1BC5A3" stroke-width="1"/>
+                                        <text id="rocHoverText1" x="8" y="15" fill="#5FE2C7" font-size="9.5" font-weight="700" font-family="'DM Mono', monospace">FPR: 0.020</text>
+                                        <text id="rocHoverText2" x="8" y="29" fill="#C5D2C1" font-size="9" font-family="'DM Mono', monospace">TPR: 98.5%</text>
+                                    </g>
+                                </g>
+
+                                <!-- Interactive Hit Target Overlay -->
+                                <rect id="rocInteractiveOverlay" class="graph-interactive-overlay" x="65" y="35" width="520" height="250" fill="transparent"/>
+                            </svg>
+                        </div>
+
+                        <div class="table-footer">
+                            <span>Area Under Curve (ROC-AUC = 0.9967) demonstrates near-perfect discrimination between fraudulent and legitimate banking transactions.</span>
+                            <span class="table-footer-source">ROC-AUC: 0.9967</span>
+                        </div>
+                    </article>
+
+
+                    <!-- Graph 2: Precision-Recall Curve (PR Curve) -->
+                    <article class="dashboard-card analytics-graph-card">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <span class="card-eyebrow">IMBALANCE BENCHMARK</span>
+                                <h3>Precision-Recall Curve (PR-AUC)</h3>
+                                <p>Tradeoff between precision and recall on class-imbalanced fraud distribution. Hover graph for live coordinates.</p>
+                            </div>
+
+                            <div class="graph-legend">
+                                <span class="legend-item">
+                                    <span class="legend-color-box legend-fraud"></span>
+                                    <span>Model (PR-AUC = 0.9712)</span>
+                                </span>
+                                <span class="legend-item">
+                                    <span class="legend-color-box legend-baseline"></span>
+                                    <span>Baseline (0.10)</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="analytics-svg-wrapper">
+                            <svg class="analytics-ml-svg" id="prSvg" viewBox="0 0 620 340" preserveAspectRatio="none" role="img" aria-label="Precision-Recall Curve Graph">
+                                <defs>
+                                    <linearGradient id="prGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#D99B62" stop-opacity="0.32"/>
+                                        <stop offset="100%" stop-color="#D99B62" stop-opacity="0.02"/>
+                                    </linearGradient>
+                                </defs>
+
+                                <!-- Grid Lines & Framework -->
+                                <line x1="65" y1="35" x2="585" y2="35" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="85" x2="585" y2="85" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="135" x2="585" y2="135" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="185" x2="585" y2="185" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="235" x2="585" y2="235" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="285" x2="585" y2="285" stroke="rgba(255,255,255,0.22)"/>
+
+                                <line x1="65" y1="35" x2="65" y2="285" stroke="rgba(255,255,255,0.22)"/>
+                                <line x1="169" y1="35" x2="169" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="273" y1="35" x2="273" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="377" y1="35" x2="377" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="481" y1="35" x2="481" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="585" y1="35" x2="585" y2="285" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
+
+                                <!-- Y Axis Numerical Ticks (Precision) -->
+                                <text x="52" y="39" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">1.0</text>
+                                <text x="52" y="89" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.8</text>
+                                <text x="52" y="139" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.6</text>
+                                <text x="52" y="189" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.4</text>
+                                <text x="52" y="239" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.2</text>
+                                <text x="52" y="289" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.0</text>
+
+                                <!-- Y Axis Label Title -->
+                                <text transform="rotate(-90)" x="-160" y="16" fill="#A4B8A6" font-size="9.5" font-weight="700" letter-spacing="0.8" text-anchor="middle" font-family="'DM Mono', monospace">PRECISION (POSITIVE PREDICTIVE VALUE)</text>
+
+                                <!-- X Axis Numerical Ticks (Recall) -->
+                                <text x="65" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.0</text>
+                                <text x="169" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.2</text>
+                                <text x="273" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.4</text>
+                                <text x="377" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.6</text>
+                                <text x="481" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.8</text>
+                                <text x="585" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">1.0</text>
+
+                                <!-- X Axis Label Title -->
+                                <text x="325" y="327" fill="#A4B8A6" font-size="9.5" font-weight="700" letter-spacing="0.8" text-anchor="middle" font-family="'DM Mono', monospace">RECALL (FRAUD DETECTION RATE)</text>
+
+                                <!-- No-Skill Baseline (Fraud Prevalence = 10% = 200/2000) -->
+                                <line x1="65" y1="260" x2="585" y2="260" stroke="#78877E" stroke-width="1.4" stroke-dasharray="5,5"/>
+                                <text x="75" y="254" fill="#78877E" font-size="9" font-family="'DM Mono', monospace">No-Skill Baseline (Prevalence = 10.0%)</text>
+
+                                <!-- PR Shaded Area Under Curve -->
+                                <polygon points="65,35 462.8,43.0 481,48.3 501.8,51.8 522.6,52.3 540.8,52.8 548.6,62.5 556.4,63.3 569.4,66.5 572,69.3 577.2,73.6 579.8,78.0 579.8,94.0 579.8,122.3 585,260 585,285 65,285" fill="url(#prGradient)"/>
+
+                                <!-- PR Curve Line (PR-AUC = 0.9712) -->
+                                <path d="M 65,35 L 462.8,43.0 L 481,48.3 L 501.8,51.8 L 522.6,52.3 L 540.8,52.8 L 548.6,62.5 L 556.4,63.3 L 569.4,66.5 L 572,69.3 L 577.2,73.6 L 579.8,78.0 L 579.8,94.0 L 579.8,122.3 L 585,260" fill="none" stroke="#D99B62" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+                                <!-- Dynamic Operating Point Guides -->
+                                <line id="prGuideX" x1="577.2" y1="73.6" x2="577.2" y2="285" stroke="#D99B62" stroke-width="1.4" stroke-dasharray="4,3" opacity="0.8"/>
+                                <line id="prGuideY" x1="577.2" y1="73.6" x2="65" y2="73.6" stroke="#D99B62" stroke-width="1.4" stroke-dasharray="4,3" opacity="0.8"/>
+
+                                <!-- Operating Point Glowing Marker -->
+                                <circle id="prOperatingPulse" cx="577.2" cy="73.6" r="9" fill="none" stroke="#D99B62" stroke-width="2" opacity="0.6"/>
+                                <circle id="prOperatingDot" cx="577.2" cy="73.6" r="4.5" fill="#EAB67D"/>
+
+                                <!-- Dynamic Callout Badge Annotation -->
+                                <g id="prCalloutGroup" transform="translate(285, 100)">
+                                    <rect width="260" height="52" rx="6" fill="#1C1813" stroke="#D99B62" stroke-width="1.3" opacity="0.96"/>
+                                    <text id="prCalloutTitle" x="12" y="21" fill="#EAB67D" font-size="10.5" font-weight="700" font-family="'DM Mono', monospace">★ CALIBRATED POINT: THRESHOLD 0.42</text>
+                                    <text id="prCalloutDesc" x="12" y="39" fill="#C5D2C1" font-size="9.5" font-family="'DM Mono', monospace">Precision: 84.55% · Recall: 98.50%</text>
+                                </g>
+
+                                <!-- Interactive Hover Tooltip & Crosshair -->
+                                <g id="prHoverGroup" style="display: none; pointer-events: none;">
+                                    <line id="prHoverLineX" x1="0" y1="35" x2="0" y2="285" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" stroke-dasharray="3,3"/>
+                                    <circle id="prHoverDot" cx="0" cy="0" r="5" fill="#EAB67D" stroke="#1C1813" stroke-width="1.5"/>
+                                    <g id="prHoverBox">
+                                        <rect width="140" height="38" rx="4" fill="#14110C" stroke="#D99B62" stroke-width="1"/>
+                                        <text id="prHoverText1" x="8" y="15" fill="#EAB67D" font-size="9.5" font-weight="700" font-family="'DM Mono', monospace">Recall: 98.5%</text>
+                                        <text id="prHoverText2" x="8" y="29" fill="#C5D2C1" font-size="9" font-family="'DM Mono', monospace">Precision: 84.6%</text>
+                                    </g>
+                                </g>
+
+                                <!-- Interactive Hit Target Overlay -->
+                                <rect id="prInteractiveOverlay" class="graph-interactive-overlay" x="65" y="35" width="520" height="250" fill="transparent"/>
+                            </svg>
+                        </div>
+
+                        <div class="table-footer">
+                            <span>High PR-AUC (0.9712) proves the system sustains 84.55% precision even when pushed to an aggressive 98.50% fraud capture rate.</span>
+                            <span class="table-footer-source">PR-AUC: 0.9712</span>
+                        </div>
+                    </article>
+
+
+                    <!-- Graph 3: Threshold Tuning Curve (Precision, Recall & F2 vs Threshold) -->
+                    <article class="dashboard-card analytics-graph-card">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <span class="card-eyebrow">DECISION OPTIMIZATION</span>
+                                <h3>Threshold Tradeoff Tuning Curve</h3>
+                                <p>Multi-metric evaluation across classification thresholds from 0.05 to 0.95. Click or hover graph to test cut-offs.</p>
+                            </div>
+
+                            <div class="graph-legend">
+                                <span class="legend-item">
+                                    <span class="legend-color-box legend-volume"></span>
+                                    <span>Recall (Catch)</span>
+                                </span>
+                                <span class="legend-item">
+                                    <span class="legend-color-box legend-fraud"></span>
+                                    <span>Precision</span>
+                                </span>
+                                <span class="legend-item">
+                                    <span class="legend-color-box legend-f2"></span>
+                                    <span>F2-Score</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="analytics-svg-wrapper">
+                            <svg class="analytics-ml-svg" id="thSvg" viewBox="0 0 620 340" preserveAspectRatio="none" role="img" aria-label="Threshold Tuning Graph">
+                                <!-- Grid Lines & Framework (Score from 0.50 to 1.00 for maximum resolution) -->
+                                <line x1="65" y1="35" x2="585" y2="35" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="85" x2="585" y2="85" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="135" x2="585" y2="135" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="185" x2="585" y2="185" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="235" x2="585" y2="235" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="65" y1="285" x2="585" y2="285" stroke="rgba(255,255,255,0.22)"/>
+
+                                <line x1="65" y1="35" x2="65" y2="285" stroke="rgba(255,255,255,0.22)"/>
+                                <line x1="169" y1="35" x2="169" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="273" y1="35" x2="273" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="377" y1="35" x2="377" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="481" y1="35" x2="481" y2="285" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                                <line x1="585" y1="35" x2="585" y2="285" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
+
+                                <!-- Y Axis Numerical Ticks (Metric Score) -->
+                                <text x="52" y="39" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">1.00</text>
+                                <text x="52" y="89" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.90</text>
+                                <text x="52" y="139" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.80</text>
+                                <text x="52" y="189" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.70</text>
+                                <text x="52" y="239" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.60</text>
+                                <text x="52" y="289" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="end" font-family="'DM Mono', monospace">0.50</text>
+
+                                <!-- Y Axis Label Title -->
+                                <text transform="rotate(-90)" x="-160" y="16" fill="#A4B8A6" font-size="9.5" font-weight="700" letter-spacing="0.8" text-anchor="middle" font-family="'DM Mono', monospace">METRIC SCORE (RESOLUTION: 0.50 - 1.00)</text>
+
+                                <!-- X Axis Numerical Ticks (Threshold) -->
+                                <text x="65" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.0</text>
+                                <text x="169" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.2</text>
+                                <text x="273" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.4</text>
+                                <text x="377" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.6</text>
+                                <text x="481" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">0.8</text>
+                                <text x="585" y="304" fill="#9FB5A8" font-size="10.5" font-weight="600" text-anchor="middle" font-family="'DM Mono', monospace">1.0</text>
+
+                                <!-- X Axis Label Title -->
+                                <text x="325" y="327" fill="#A4B8A6" font-size="9.5" font-weight="700" letter-spacing="0.8" text-anchor="middle" font-family="'DM Mono', monospace">DECISION THRESHOLD (SWEEP 0.05 TO 0.95)</text>
+
+                                <!-- Curve 1: Recall (Emerald Line) -->
+                                <path d="M 91,40 L 169,40 L 247,40 L 273,42.5 L 283.4,42.5 L 299,47.5 L 325,50 L 377,70 L 429,77.5 L 481,95 L 533,135 L 559,152.5" fill="none" stroke="#1BC5A3" stroke-width="2.6" stroke-linecap="round"/>
+
+                                <!-- Curve 2: Precision (Amber Line) -->
+                                <path d="M 91,209.5 L 169,153 L 247,121 L 273,112.5 L 283.4,112 L 325,98 L 377,90 L 429,70.5 L 481,69.5 L 533,61.5 L 559,51" fill="none" stroke="#D99B62" stroke-width="2.6" stroke-linecap="round"/>
+
+                                <!-- Curve 3: F2-Score (Cyan / White Highlight Curve) -->
+                                <path d="M 91,86.6 L 169,67.6 L 247,58.6 L 273,58.2 L 283.4,58.2 L 299,60 L 325,60.4 L 377,74.1 L 429,76.1 L 481,90 L 533,122 L 559,135.7" fill="none" stroke="#5FE2C7" stroke-width="3.2" stroke-linecap="round"/>
+
+                                <!-- Dynamic Vertical Indicator at Chosen Threshold -->
+                                <line id="thCursorLine" x1="283.4" y1="35" x2="283.4" y2="285" stroke="#5FE2C7" stroke-width="2" stroke-dasharray="4,4"/>
+                                <circle id="thRecallDot" cx="283.4" cy="42.5" r="4.5" fill="#1BC5A3" stroke="#0D1A16" stroke-width="1.2"/>
+                                <circle id="thPrecisionDot" cx="283.4" cy="112" r="4.5" fill="#D99B62" stroke="#0D1A16" stroke-width="1.2"/>
+                                <circle id="thF2Dot" cx="283.4" cy="58.2" r="5.5" fill="#5FE2C7" stroke="#0D1A16" stroke-width="1.2"/>
+
+                                <!-- Secondary Indicator at Default Threshold 0.50 (X = 325) -->
+                                <line x1="325" y1="35" x2="325" y2="285" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3,3"/>
+                                <circle cx="325" cy="60.4" r="3" fill="#88988E"/>
+                                <text x="331" y="48" fill="#88988E" font-size="9" font-family="'DM Mono', monospace">Default 0.50</text>
+
+                                <!-- Dynamic Callout Badge Annotation -->
+                                <g id="thCalloutGroup" transform="translate(130, 168)">
+                                    <rect width="280" height="54" rx="6" fill="#0D1A16" stroke="#5FE2C7" stroke-width="1.3" opacity="0.96"/>
+                                    <text id="thCalloutTitle" x="12" y="21" fill="#5FE2C7" font-size="10.5" font-weight="700" font-family="'DM Mono', monospace">★ PEAK F2 THRESHOLD: 0.42</text>
+                                    <text id="thCalloutDesc" x="12" y="40" fill="#C5D2C1" font-size="9.5" font-family="'DM Mono', monospace">Peak F2: 0.9535 · Missed Frauds: 3 (vs 6 at 0.50)</text>
+                                </g>
+
+                                <!-- Interactive Hover Tooltip & Cursor -->
+                                <g id="thHoverGroup" style="display: none; pointer-events: none;">
+                                    <line id="thHoverLine" x1="0" y1="35" x2="0" y2="285" stroke="rgba(95,226,199,0.7)" stroke-width="1.4" stroke-dasharray="3,3"/>
+                                    <g id="thHoverBox">
+                                        <rect width="155" height="48" rx="4" fill="#091410" stroke="#5FE2C7" stroke-width="1"/>
+                                        <text id="thHoverText1" x="8" y="15" fill="#5FE2C7" font-size="9.5" font-weight="700" font-family="'DM Mono', monospace">Thr: 0.42</text>
+                                        <text id="thHoverText2" x="8" y="29" fill="#1BC5A3" font-size="9" font-family="'DM Mono', monospace">Recall: 98.5%</text>
+                                        <text id="thHoverText3" x="8" y="42" fill="#D99B62" font-size="9" font-family="'DM Mono', monospace">Prec: 84.6% · F2: 0.953</text>
+                                    </g>
+                                </g>
+
+                                <!-- Interactive Hit Target Overlay -->
+                                <rect id="thInteractiveOverlay" class="graph-interactive-overlay" x="65" y="35" width="520" height="250" fill="transparent"/>
+                            </svg>
+                        </div>
+
+                        <div class="table-footer">
+                            <span>Threshold 0.42 was mathematically selected over 0.50 to prioritize fraud recall, cutting undetected fraud incidents by 50%.</span>
+                            <span class="table-footer-source">OPTIMIZED F2: 0.9535</span>
+                        </div>
+                    </article>
+
+
+                    <!-- Graph 4: Confusion Matrix Heatmap Graph -->
+                    <article class="dashboard-card confusion-matrix-card">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <span class="card-eyebrow">CLASSIFICATION HEATMAP</span>
+                                <h3>Confusion Matrix (N = 2,000 Cases)</h3>
+                                <p>Hold-out test dataset validation showing 197 true positive fraud interceptions. Click any cell to inspect.</p>
+                            </div>
+                            <span class="card-menu-label">N = 2,000</span>
+                        </div>
+
+                        <div class="confusion-matrix-body">
+                            <!-- Matrix Header Labels -->
+                            <div class="cm-header-row">
+                                <div class="cm-corner-label">ACTUAL \ PRED</div>
+                                <div class="cm-col-label">PREDICTED NORMAL</div>
+                                <div class="cm-col-label">PREDICTED FRAUD</div>
+                            </div>
+
+                            <!-- Row 1: Actual Normal -->
+                            <div class="cm-data-row">
+                                <div class="cm-row-label">ACTUAL NORMAL (1,800)</div>
+                                <div class="cm-cell cm-cell-tn" data-cm-type="tn" title="Click to inspect True Negatives">
+                                    <div class="cm-cell-count" id="cmTnCount">1,764</div>
+                                    <div class="cm-cell-title">True Negative (TN)</div>
+                                    <div class="cm-cell-pct" id="cmTnPct">98.0% of Normal · Legitimate Approved</div>
+                                </div>
+                                <div class="cm-cell cm-cell-fp" data-cm-type="fp" title="Click to inspect False Positives">
+                                    <div class="cm-cell-count" id="cmFpCount">36</div>
+                                    <div class="cm-cell-title">False Positive (FP)</div>
+                                    <div class="cm-cell-pct" id="cmFpPct">2.0% False Alarms (36 of 1,800)</div>
+                                </div>
+                            </div>
+
+                            <!-- Row 2: Actual Fraud -->
+                            <div class="cm-data-row">
+                                <div class="cm-row-label">ACTUAL FRAUD (200)</div>
+                                <div class="cm-cell cm-cell-fn" data-cm-type="fn" title="Click to inspect False Negatives">
+                                    <div class="cm-cell-count" id="cmFnCount">3</div>
+                                    <div class="cm-cell-title">False Negative (FN)</div>
+                                    <div class="cm-cell-pct" id="cmFnPct">1.5% Missed (50% cut from 6)</div>
+                                </div>
+                                <div class="cm-cell cm-cell-tp" data-cm-type="tp" title="Click to inspect True Positives">
+                                    <div class="cm-cell-count" id="cmTpCount">197</div>
+                                    <div class="cm-cell-title">True Positive (TP)</div>
+                                    <div class="cm-cell-pct" id="cmTpPct">98.5% Intercepted Frauds (197 / 200)</div>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Click Inspector Drawer -->
+                            <div id="cmCellInspector" class="cm-inspector-drawer" style="display: none;">
+                                <div class="cm-inspector-header">
+                                    <strong id="cmInspectorTitle">Cell Details</strong>
+                                    <button type="button" id="cmInspectorClose" class="cm-inspector-close">&times;</button>
+                                </div>
+                                <p id="cmInspectorDesc">Click any matrix quadrant above to see deep operational insights.</p>
+                            </div>
+                        </div>
+
+                        <div class="cm-summary-strip">
+                            <div class="cm-summary-item">
+                                <span>SPECIFICITY</span>
+                                <strong id="cmSummarySpecificity">98.00%</strong>
+                            </div>
+                            <div class="cm-summary-item">
+                                <span>SENSITIVITY (RECALL)</span>
+                                <strong id="cmSummaryRecall" style="color: var(--dash-emerald);">98.50%</strong>
+                            </div>
+                            <div class="cm-summary-item">
+                                <span>PRECISION</span>
+                                <strong id="cmSummaryPrecision" style="color: var(--dash-copper);">84.55%</strong>
+                            </div>
+                            <div class="cm-summary-item">
+                                <span>ACCURACY</span>
+                                <strong id="cmSummaryAccuracy" style="color: #5FE2C7;">98.05%</strong>
+                            </div>
+                        </div>
+                    </article>
+
+                </div>
+
+
+                <!-- Bottom Telemetry & Vector Breakdown Row -->
+                <div class="analytics-charts-grid">
+
+                    <!-- Chart 1: Fraud Distribution by Transaction Type -->
+                    <article class="dashboard-card analytics-chart-card">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <span class="card-eyebrow">VECTOR BREAKDOWN</span>
+                                <h3>Fraud Distribution by Transaction Type</h3>
+                                <p>Proportion of flagged anomalies across banking transaction channels. Click vector to inspect.</p>
+                            </div>
+                            <span class="stat-card-badge">CHANNEL SPLIT</span>
+                        </div>
+
+                        <div class="channel-distribution-list">
+
+                            <!-- Transfer -->
+                            <div class="channel-item interactive-channel" data-channel="transfer">
+                                <div class="channel-item-header">
+                                    <span class="channel-name">
+                                        <span class="distribution-dot dot-new"></span>
+                                        Electronic Transfer (Primary High-Risk Vector)
+                                    </span>
+                                    <span class="channel-val">68.0% (134 alerts)</span>
+                                </div>
+                                <div class="distribution-track">
+                                    <div class="distribution-fill fill-new" style="width: 68%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Withdrawal -->
+                            <div class="channel-item interactive-channel" data-channel="withdrawal">
+                                <div class="channel-item-header">
+                                    <span class="channel-name">
+                                        <span class="distribution-dot dot-review"></span>
+                                        ATM / Direct Withdrawal (Medium Risk)
+                                    </span>
+                                    <span class="channel-val">24.0% (47 alerts)</span>
+                                </div>
+                                <div class="distribution-track">
+                                    <div class="distribution-fill fill-review" style="width: 24%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Payment -->
+                            <div class="channel-item interactive-channel" data-channel="payment">
+                                <div class="channel-item-header">
+                                    <span class="channel-name">
+                                        <span class="distribution-dot dot-resolved"></span>
+                                        Merchant POS Payment (Low Risk)
+                                    </span>
+                                    <span class="channel-val">8.0% (16 alerts)</span>
+                                </div>
+                                <div class="distribution-track">
+                                    <div class="distribution-fill fill-resolved" style="width: 8%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Deposit -->
+                            <div class="channel-item interactive-channel" data-channel="deposit">
+                                <div class="channel-item-header">
+                                    <span class="channel-name">
+                                        <span class="distribution-dot" style="background: #78877E;"></span>
+                                        Account Deposit (Safe Baseline)
+                                    </span>
+                                    <span class="channel-val">0.0% (0 alerts)</span>
+                                </div>
+                                <div class="distribution-track">
+                                    <div class="distribution-fill" style="width: 0%; background: #78877E;"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </article>
+
+
+                    <!-- Chart 2: Cost-Sensitive Optimization Comparison -->
+                    <article class="dashboard-card analytics-chart-card">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <span class="card-eyebrow">FINANCIAL IMPACT METRICS</span>
+                                <h3>Threshold Optimization: 0.50 vs. 0.42 Calibrated</h3>
+                                <p>Minimizing direct fraud losses through asymmetric cost-benefit calibration.</p>
+                            </div>
+                            <span class="stat-card-badge badge-urgent">MAX F2 RECALL</span>
+                        </div>
+
+                        <div class="threshold-comparison-box">
+                            <!-- Default 0.50 -->
+                            <div class="threshold-metric-row">
+                                <div class="threshold-row-title">
+                                    <strong>Default Baseline (Threshold 0.50)</strong>
+                                    <span>Standard 50/50 probability cut-off</span>
+                                </div>
+                                <div class="threshold-stat-bars">
+                                    <div class="threshold-pill-group">
+                                        <span class="threshold-pill pill-amber">Recall: 97.00%</span>
+                                        <span class="threshold-pill pill-muted">Caught: 194/200</span>
+                                        <span class="threshold-pill pill-danger">Missed: 6 Frauds</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Calibrated 0.42 -->
+                            <div class="threshold-metric-row active-threshold-row">
+                                <div class="threshold-row-title">
+                                    <strong>Calibrated Pipeline (Threshold 0.42)</strong>
+                                    <span style="color: var(--dash-emerald);">Production operating point (Optimal F2)</span>
+                                </div>
+                                <div class="threshold-stat-bars">
+                                    <div class="threshold-pill-group">
+                                        <span class="threshold-pill pill-success">Recall: 98.50%</span>
+                                        <span class="threshold-pill pill-success">Caught: 197/200</span>
+                                        <span class="threshold-pill pill-highlight">Missed: Only 3 Frauds</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="threshold-impact-callout">
+                                <span class="callout-icon">⚡</span>
+                                <div>
+                                    <strong id="analyticsImpactTitle">50% Reduction in Undetected Fraud Losses</strong>
+                                    <p id="analyticsImpactDesc">Calibrating to threshold 0.42 intercepts 3 additional high-value fraud transactions (197 caught vs. 194) with minimal review overhead (+8 FP in 1,800 normal cases).</p>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================================
+                 FOOTER
+            ========================================== -->
+
+            <footer class="dashboard-footer">
+
+                <div class="dashboard-footer-left">
+
+                    <span class="footer-brand-dot"></span>
+
+                    <span>
+                        FRAUD<span class="footer-brand-accent">GUARD</span>
+                    </span>
+
+                    <span class="footer-separator">·</span>
+
+                    <span>Financial Fraud Detection</span>
+
+                </div>
+
+
+                <div class="dashboard-footer-right">
+
+                    <span id="dashboardFooterYear">
+                        ©
+                    </span>
+
+                </div>
+
+            </footer>
+
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<!-- Mobile Sidebar Overlay -->
+
+<div
+    class="dashboard-sidebar-overlay"
+    id="sidebarOverlay"
+    aria-hidden="true"
+></div>
+
+
+<!-- Alert Action Menu -->
+
+<div
+    class="alert-action-menu"
+    id="alertActionMenu"
+    hidden
+></div>
+
+
+<!-- JavaScript: API Client Must Load First -->
+
+<script src="js/api.js"></script>
+
+<script src="js/dashboard.js"></script>
+
+</body>
+</html>
