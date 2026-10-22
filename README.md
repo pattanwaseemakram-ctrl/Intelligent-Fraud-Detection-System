@@ -129,6 +129,15 @@ Financial-Fraud-Detection-System/
 │       ├── login.js                              # Login validation & session handling
 │       └── dashboard.js                          # Real-time predictor, charts & alert triage
 │
+├── Documentation/                                # Academic & Technical Documentation Suite
+│   ├── Project_Report.pdf                        # Master comprehensive explanation of project
+│   ├── Data_Preprocessing.pdf                    # Pipeline hygiene, feature math & balancing
+│   ├── Machine_Learning.pdf                      # Model training, threshold calibration (T=0.42)
+│   ├── System_Architecture.pdf                   # FastAPI, PostgreSQL & multi-theme UI architecture
+│   ├── API_Documentation.pdf                     # OpenAPI specifications, endpoints & schemas
+│   ├── Testing_Report.pdf                        # QA verification & 197-batch holdout testing
+│   └── Screenshots/                              # Platform UI screenshots & high-resolution plots
+│
 ├── requirements.txt                              # Pinned Python package dependencies
 ├── .gitignore                                    # Version control exclusion rules
 └── README.md                                     # Project documentation
@@ -250,6 +259,22 @@ The frontend is built using standard Vanilla Web Technologies (HTML5, Vanilla CS
      - Live **Confusion Matrix Heatmap**: Real-time recalculation of True Positives, False Positives, True Negatives, and False Negatives as the slider moves.
    - **Alert Management & Triage**:
      - Interactive table of PostgreSQL alerts with real-time status filtering (`New`, `Under Review`, `Resolved`), search, inline status update buttons, and deletion.
+
+---
+
+## Project Documentation Suite
+
+Comprehensive formal academic and technical documentation is maintained in the [`Documentation/`](./Documentation/) directory:
+
+| Priority | Document | Format | Description |
+| :---: | :--- | :---: | :--- |
+| **1** | [`Project_Report.pdf`](./Documentation/Project_Report.pdf) | PDF (5 Pages) | Master comprehensive explanation of problem, architecture, ML results, and roadmap |
+| **2** | [`Data_Preprocessing.pdf`](./Documentation/Data_Preprocessing.pdf) | PDF (2 Pages) | Data hygiene, 5 behavioral engineered features, one-hot encoding, and ROS balancing |
+| **3** | [`Machine_Learning.pdf`](./Documentation/Machine_Learning.pdf) | PDF (3 Pages) | Model training, 5-fold CV, T=0.42 threshold tuning, and financial cost minimization |
+| **4** | [`System_Architecture.pdf`](./Documentation/System_Architecture.pdf) | PDF (2 Pages) | Multi-tier topology, FastAPI micro-routers, PostgreSQL schema, and 5-theme switcher |
+| **5** | [`API_Documentation.pdf`](./Documentation/API_Documentation.pdf) | PDF (2 Pages) | Complete OpenAPI endpoint catalog, request/response schemas, and OAuth2 security |
+| **6** | [`Testing_Report.pdf`](./Documentation/Testing_Report.pdf) | PDF (2 Pages) | QA validation, 197 hold-out fraud batch verification, latency tests, and security tests |
+| **7** | [`Screenshots/`](./Documentation/Screenshots/) | Directory (14 Assets) | High-resolution UI screenshots (Landing, Login, Dashboard) and analytical charts |
 
 ---
 
