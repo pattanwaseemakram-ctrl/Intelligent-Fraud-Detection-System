@@ -268,12 +268,12 @@ Comprehensive formal academic and technical documentation is maintained in the [
 
 | Priority | Document | Format | Description |
 | :---: | :--- | :---: | :--- |
-| **1** | [`Project_Report.pdf`](./Documentation/Project_Report.pdf) | PDF (5 Pages) | Master comprehensive explanation of problem, architecture, ML results, and roadmap |
+| **1** | [`Project_Report.pdf`](./Documentation/Project_Report.pdf) | PDF (8 Pages) | Master comprehensive explanation of problem, architecture, ML results, and roadmap |
 | **2** | [`Data_Preprocessing.pdf`](./Documentation/Data_Preprocessing.pdf) | PDF (2 Pages) | Data hygiene, 5 behavioral engineered features, one-hot encoding, and ROS balancing |
 | **3** | [`Machine_Learning.pdf`](./Documentation/Machine_Learning.pdf) | PDF (3 Pages) | Model training, 5-fold CV, T=0.42 threshold tuning, and financial cost minimization |
-| **4** | [`System_Architecture.pdf`](./Documentation/System_Architecture.pdf) | PDF (2 Pages) | Multi-tier topology, FastAPI micro-routers, PostgreSQL schema, and 5-theme switcher |
+| **4** | [`System_Architecture.pdf`](./Documentation/System_Architecture.pdf) | PDF (3 Pages) | Multi-tier topology, FastAPI micro-routers, PostgreSQL schema, and 5-theme switcher |
 | **5** | [`API_Documentation.pdf`](./Documentation/API_Documentation.pdf) | PDF (2 Pages) | Complete OpenAPI endpoint catalog, request/response schemas, and OAuth2 security |
-| **6** | [`Testing_Report.pdf`](./Documentation/Testing_Report.pdf) | PDF (2 Pages) | QA validation, 197 hold-out fraud batch verification, latency tests, and security tests |
+| **6** | [`Testing_Report.pdf`](./Documentation/Testing_Report.pdf) | PDF (3 Pages) | QA validation, 197 hold-out fraud batch verification, latency tests, and security tests |
 | **7** | [`Screenshots/`](./Documentation/Screenshots/) | Directory (14 Assets) | High-resolution UI screenshots (Landing, Login, Dashboard) and analytical charts |
 
 ---
